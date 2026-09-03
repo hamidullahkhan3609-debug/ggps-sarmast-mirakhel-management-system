@@ -1256,7 +1256,8 @@ window.openUserModal = function() {
     const role = document.getElementById('u-role').value;
 
     try {
-      const creds = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+      const creds = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+
       const newUid = creds.user.uid;
 
       await setDoc(doc(db, "users", newUid), {
