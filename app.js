@@ -1,7 +1,8 @@
 import { 
-  auth, db, secondaryAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  auth, db, secondaryAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword,
   doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, onSnapshot, orderBy, serverTimestamp 
 } from "./firebase.js";
+
 
 // STATE MANAGEMENT
 let currentUser = null;
