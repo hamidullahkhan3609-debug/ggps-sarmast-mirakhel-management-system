@@ -25,7 +25,7 @@ import {
 
 // YOUR FIREBASE CONFIGURATION
 const firebaseConfig = {
-  apiKey: "AIzaSy...", // Ensure your real Firebase API Key is here
+  apiKey: "Jvzbej30hNTNWs7y64i0hpXtbWb2", // Ensure your real Firebase API Key is here
   authDomain: "ggps-sarmast.firebaseapp.com",
   projectId: "ggps-sarmast",
   storageBucket: "ggps-sarmast.appspot.com",
