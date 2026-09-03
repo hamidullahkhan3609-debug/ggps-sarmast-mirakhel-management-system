@@ -71,17 +71,24 @@ function initializeUI() {
   if (roleEl) roleEl.innerText = userRole;
   if (badgeEl) badgeEl.innerText = userRole;
 
-  // Role Permissions Display
+  // Hide Super Admin sections
   const superAdminNav = document.querySelectorAll('.superadmin-only');
   superAdminNav.forEach(el => el.style.display = (userRole === 'superadmin') ? 'flex' : 'none');
 
-  const editBtns = document.querySelectorAll('.edit-permission-only');
-  editBtns.forEach(el => {
-    el.style.display = (userRole === 'student') ? 'none' : 'inline-flex';
+  // Hide Admin-Only confidential modules from Students
+  const adminNav = document.querySelectorAll('.admin-only');
+  adminNav.forEach(el => {
+    el.style.display = (userRole === 'student') ? 'none' : 'flex';
   });
 
-  switchView('dashboard');
+  // Default view for students: Notices instead of Dashboard/Records
+  if (userRole === 'student') {
+    switchView('notices');
+  } else {
+    switchView('dashboard');
+  }
 }
+
 
 function setupEventListeners() {
   if (loginForm) {
