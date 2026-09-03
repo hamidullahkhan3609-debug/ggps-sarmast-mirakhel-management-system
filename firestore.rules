@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn(){return request.auth!=null;}
+  function me(){return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;}
+  function superadmin(){return signedIn() && me().role=="superadmin";}
+  function admin(){return signedIn() && (me().role=="admin" || me().role=="superadmin");}
+  function teacherOrAdmin(){return signedIn() && (me().role=="teacher" || me().role=="admin" || me().role=="superadmin");}
+
+  match /users/{uid}{allow read: if signedIn()&&(request.auth.uid==uid||superadmin());allow create,update,delete: if superadmin();}
+  match /students/{id}{allow read: if signedIn();allow create,update: if admin();allow delete: if superadmin();}
+  match /teachers/{id}{allow read: if signedIn();allow create,update: if admin();allow delete: if superadmin();}
+  match /subjects/{id}{allow read: if signedIn();allow create,update: if admin();allow delete: if superadmin();}
+  match /exams/{id}{allow read: if signedIn();allow create,update: if admin();allow delete: if superadmin();}
+  match /marks/{id}{allow read: if signedIn();allow create,update: if teacherOrAdmin();allow delete: if superadmin();}
+  match /attendance/{id}{allow read: if signedIn();allow create,update: if teacherOrAdmin();allow delete: if superadmin();}
+  match /timetable/{id}{allow read: if signedIn();allow create,update: if admin();allow delete: if superadmin();}
+  match /notices/{id}{allow read: if signedIn();allow create,update: if admin();allow delete: if superadmin();}
+ }
+}

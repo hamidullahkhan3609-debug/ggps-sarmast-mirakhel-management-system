@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GGPS Sarmast Mira Khel Bannu</title>
+<link rel="icon" href="assets/1000503894.png"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+<div id="loginView" class="login-page"><div class="login-card">
+<img src="assets/1000503894.png" class="logo" alt="School logo">
+<h1>Govt. Girls Primary School</h1><p>Sarmast Mira Khel Bannu</p>
+<div id="authStatus" class="status">Connecting to Firebase...</div>
+<form id="loginForm"><input id="email" type="email" placeholder="Email" required>
+<input id="password" type="password" placeholder="Password" placeholder="Password" required>
+<button id="loginBtn" class="primary">Sign In</button></form><div id="loginMessage" class="message"></div>
+</div></div>
+
+<div id="appView" class="hidden">
+<header class="topbar"><div class="brand"><img src="assets/1000503894.png"><div><b>GGPS Sarmast Mira Khel Bannu</b><small>Educate Today, Empower Tomorrow.</small></div></div>
+<div class="user-area"><span id="userBadge"></span><button id="logoutBtn" class="danger">Logout</button></div></header>
+<div class="layout"><aside class="sidebar" id="sidebar">
+<button class="nav-btn active" data-page="dashboard">Dashboard</button>
+<button class="nav-btn" data-page="students">Students</button><button class="nav-btn" data-page="teachers">Teachers</button>
+<button class="nav-btn" data-page="subjects">Subjects</button><button class="nav-btn" data-page="exams">Exams</button>
+<button class="nav-btn" data-page="marks">Marks & Results</button><button class="nav-btn" data-page="attendance">Attendance</button>
+<button class="nav-btn" data-page="timetable">Timetable</button><button class="nav-btn" data-page="notices">Notices & Calendar</button>
+<button class="nav-btn" data-page="users" data-super="1">Users</button>
+</aside><main class="content">
+
+<section id="dashboard" class="page active"><div class="page-head"><h2>Dashboard</h2></div>
+<div class="cards"><div class="card"><span>Students</span><b id="studentCount">0</b></div><div class="card"><span>Teachers</span><b id="teacherCount">0</b></div>
+<div class="card"><span>Subjects</span><b id="subjectCount">0</b></div><div class="card"><span>Exams</span><b id="examCount">0</b></div></div>
+<div class="panel"><h3>School Information</h3><div class="info-grid">
+<p><b>School:</b> Govt. Girls Primary School Sarmast Mira Khel Bannu</p><p><b>Head Mistress:</b> Miss Sheeba Khan</p>
+<p><b>Classes:</b> Class 1–Class 5 (No sections)</p><p><b>Exams:</b> Mid-Term and Annual</p><p><b>Fees:</b> None — Government School</p>
+</div></div></section>
+
+<section id="students" class="page"><div class="page-head"><h2>Students</h2><button id="addStudentBtn" class="primary">+ Add Student</button></div>
+<div id="studentFormWrap" class="panel hidden"><form id="studentForm" class="grid-form"><input type="hidden" id="studentId">
+<input id="studentName" placeholder="Student Name" required><input id="fatherName" placeholder="Father Name" required>
+<input id="admissionNumber" placeholder="Admission Number" required><select id="studentClass" required><option value="">Select Class</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option></select>
+<input id="classId" placeholder="Class ID"><input id="dob" type="date"><input id="phone" placeholder="Phone"><input id="admissionDate" type="date">
+<div class="form-actions"><button class="primary">Save Student</button><button type="button" id="cancelStudent">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Father</th><th>Admission No.</th><th>Class</th><th>DOB</th><th>Phone</th><th>Actions</th></tr></thead><tbody id="studentsTable"></tbody></table></div></section>
+
+<section id="teachers" class="page"><div class="page-head"><h2>Teachers</h2><button id="addTeacherBtn" class="primary">+ Add Teacher</button></div>
+<div id="teacherFormWrap" class="panel hidden"><form id="teacherForm" class="grid-form"><input type="hidden" id="teacherId">
+<input id="teacherName" placeholder="Teacher Name" required><input id="teacherFather" placeholder="Father Name">
+<input id="teacherPhone" placeholder="Phone"><input id="teacherEmail" type="email" placeholder="Email">
+<select id="teacherClass"><option value="">Assigned Class</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option></select>
+<input id="teacherSubjects" placeholder="Subjects (comma separated)"><div class="form-actions"><button class="primary">Save Teacher</button><button type="button" id="cancelTeacher">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Class</th><th>Subjects</th><th>Actions</th></tr></thead><tbody id="teachersTable"></tbody></table></div></section>
+
+<section id="subjects" class="page"><div class="page-head"><h2>Subjects</h2><button id="addSubjectBtn" class="primary">+ Add Subject</button></div>
+<div id="subjectFormWrap" class="panel hidden"><form id="subjectForm" class="grid-form"><input type="hidden" id="subjectId"><input id="subjectName" placeholder="Subject Name" required>
+<select id="subjectClass" required><option value="">Select Class</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option></select>
+<div class="form-actions"><button class="primary">Save Subject</button><button type="button" id="cancelSubject">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Subject</th><th>Class</th><th>Actions</th></tr></thead><tbody id="subjectsTable"></tbody></table></div></section>
+
+<section id="exams" class="page"><div class="page-head"><h2>Exams</h2><button id="addExamBtn" class="primary">+ Add Exam</button></div>
+<div id="examFormWrap" class="panel hidden"><form id="examForm" class="grid-form"><input type="hidden" id="examId">
+<select id="examName" required><option value="">Exam</option><option>Mid-Term</option><option>Annual</option></select>
+<select id="examClass" required><option value="">Class</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option></select>
+<input id="examMax" type="number" min="1" placeholder="Maximum Marks" required><input id="examPass" type="number" min="0" placeholder="Passing Marks" required>
+<input id="examDate" type="date"><div class="form-actions"><button class="primary">Save Exam</button><button type="button" id="cancelExam">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Exam</th><th>Class</th><th>Max</th><th>Pass</th><th>Date</th><th>Actions</th></tr></thead><tbody id="examsTable"></tbody></table></div></section>
+
+<section id="marks" class="page"><div class="page-head"><h2>Marks & Results</h2><button id="addMarkBtn" class="primary">+ Enter Marks</button></div>
+<div id="markFormWrap" class="panel hidden"><form id="markForm" class="grid-form"><input type="hidden" id="markId">
+<select id="markStudent" required><option value="">Student</option></select><select id="markExam" required><option value="">Exam</option></select>
+<input id="markObtained" type="number" min="0" placeholder="Obtained Marks" required><div class="form-actions"><button class="primary">Save Marks</button><button type="button" id="cancelMark">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Student</th><th>Exam</th><th>Obtained</th><th>%</th><th>Grade</th><th>Result</th><th>Actions</th></tr></thead><tbody id="marksTable"></tbody></table></div></section>
+
+<section id="attendance" class="page"><div class="page-head"><h2>Attendance</h2><button id="addAttendanceBtn" class="primary">+ Mark Attendance</button></div>
+<div id="attendanceFormWrap" class="panel hidden"><form id="attendanceForm" class="grid-form"><input type="hidden" id="attendanceId">
+<select id="attendanceStudent" required><option value="">Student</option></select><input id="attendanceDate" type="date" required>
+<select id="attendanceStatus" required><option>Present</option><option>Absent</option><option>Leave</option></select>
+<div class="form-actions"><button class="primary">Save Attendance</button><button type="button" id="cancelAttendance">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Student</th><th>Date</th><th>Status</th><th>Marked By</th><th>Actions</th></tr></thead><tbody id="attendanceTable"></tbody></table></div></section>
+
+<section id="timetable" class="page"><div class="page-head"><h2>Timetable</h2><button id="addTimetableBtn" class="primary">+ Add Period</button></div>
+<div id="timetableFormWrap" class="panel hidden"><form id="timetableForm" class="grid-form"><input type="hidden" id="timetableId">
+<select id="ttClass" required><option value="">Class</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option></select>
+<select id="ttDay" required><option value="">Day</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+<input id="ttPeriod" placeholder="Period / Time" required><input id="ttSubject" placeholder="Subject" required><input id="ttTeacher" placeholder="Teacher">
+<div class="form-actions"><button class="primary">Save Period</button><button type="button" id="cancelTimetable">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Class</th><th>Day</th><th>Period</th><th>Subject</th><th>Teacher</th><th>Actions</th></tr></thead><tbody id="timetableTable"></tbody></table></div></section>
+
+<section id="notices" class="page"><div class="page-head"><h2>Notices & Calendar</h2><button id="addNoticeBtn" class="primary">+ Add Notice</button></div>
+<div id="noticeFormWrap" class="panel hidden"><form id="noticeForm" class="grid-form"><input type="hidden" id="noticeId"><input id="noticeTitle" placeholder="Notice Title" required>
+<input id="noticeDate" type="date" required><textarea id="noticeText" placeholder="Notice / Event details" required></textarea>
+<div class="form-actions"><button class="primary">Save Notice</button><button type="button" id="cancelNotice">Cancel</button></div></form></div>
+<div class="panel table-wrap"><table><thead><tr><th>Title</th><th>Date</th><th>Details</th><th>Actions</th></tr></thead><tbody id="noticesTable"></tbody></table></div></section>
+
+<section id="users" class="page"><div class="page-head"><h2>Users</h2><button id="addUserBtn" class="primary">+ Add User Profile</button></div>
+<div class="panel"><p>Authentication accounts are created in Firebase Authentication. This screen stores the user's profile and role in Firestore.</p>
+<table><thead><tr><th>UID</th><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table></div>
+<div id="userFormWrap" class="panel hidden"><form id="userForm" class="grid-form"><input id="userUid" placeholder="Firebase Auth UID" required>
+<input id="userName" placeholder="Name" required><input id="userEmail" type="email" placeholder="Email" required>
+<select id="userRole" required><option>admin</option><option>teacher</option><option>student</option><option>superadmin</option></select>
+<div class="form-actions"><button class="primary">Save Profile</button><button type="button" id="cancelUser">Cancel</button></div></form></div></section>
+
+</main></div></div>
+<script type="module" src="app.js"></script>
+</body></html>
