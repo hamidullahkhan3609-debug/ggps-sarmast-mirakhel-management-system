@@ -25,12 +25,13 @@ import {
 
 // YOUR FIREBASE CONFIGURATION
 const firebaseConfig = {
-  apiKey: "Jvzbej30hNTNWs7y64i0hpXtbWb2", // Ensure your real Firebase API Key is here
-  authDomain: "ggps-sarmast.firebaseapp.com",
-  projectId: "ggps-sarmast",
-  storageBucket: "ggps-sarmast.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef"
+  apiKey: "AIzaSyDDj3kRJQeUTUaYgrqnJi8XyFLc44acSgA",
+  authDomain: "ggps-sarmast-mira-khel-bannu.firebaseapp.com",
+  projectId: "ggps-sarmast-mira-khel-bannu",
+  storageBucket: "ggps-sarmast-mira-khel-bannu.firebasestorage.app",
+  messagingSenderId: "525501747044",
+  appId: "1:525501747044:web:37d7be050de763b1adf471",
+  measurementId: "G-269YCDJJFH"
 };
 
 // INITIALIZE MAIN APP
