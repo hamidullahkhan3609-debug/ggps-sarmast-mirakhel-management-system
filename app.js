@@ -1020,6 +1020,160 @@ window.openStudentModal = async function(id = null) {
       );
     }
   };
+  // =========================================================
+// STUDENT PROFILE VIEW
+// =========================================================
+
+window.viewStudentProfile = async function(id) {
+  try {
+    const studentRef = doc(db, "students", id);
+    const studentSnap = await getDoc(studentRef);
+
+    if (!studentSnap.exists()) {
+      alert("Student record not found.");
+      return;
+    }
+
+    const student = studentSnap.data();
+
+    const createdDate = student.createdAt?.toDate
+      ? student.createdAt.toDate().toLocaleDateString('en-GB')
+      : '-';
+
+    const html = `
+      <div class="student-profile">
+
+        <div class="student-profile-header">
+          <div class="student-profile-avatar">
+            <i class="fa fa-user-graduate"></i>
+          </div>
+
+          <div class="student-profile-title">
+            <h2>${escapeHtml(student.name || '-')}</h2>
+            <p>
+              Admission No:
+              <strong>${escapeHtml(student.admissionNumber || '-')}</strong>
+            </p>
+          </div>
+        </div>
+
+        <div class="student-profile-grid">
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-user"></i>
+              Student Name
+            </span>
+            <strong>${escapeHtml(student.name || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-user"></i>
+              Father Name
+            </span>
+            <strong>${escapeHtml(student.fatherName || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-id-card"></i>
+              Admission Number
+            </span>
+            <strong>${escapeHtml(student.admissionNumber || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-school"></i>
+              Class
+            </span>
+            <strong>${escapeHtml(student.class || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-hashtag"></i>
+              Class ID
+            </span>
+            <strong>${escapeHtml(student.classId || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-calendar"></i>
+              Date of Birth
+            </span>
+            <strong>${escapeHtml(student.dateOfBirth || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-phone"></i>
+              Phone Number
+            </span>
+            <strong>${escapeHtml(student.phone || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-calendar-plus"></i>
+              Admission Date
+            </span>
+            <strong>${escapeHtml(student.admissionDate || '-')}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">
+              <i class="fa fa-clock"></i>
+              Registered On
+            </span>
+            <strong>${createdDate}</strong>
+          </div>
+
+        </div>
+
+        <div class="student-profile-actions">
+
+          ${
+            (userRole === 'superadmin' || userRole === 'admin')
+              ? `
+                <button
+                  class="btn btn-primary"
+                  onclick="closeModal(); openStudentModal('${id}')">
+                  <i class="fa fa-edit"></i>
+                  Edit Student
+                </button>
+              `
+              : ''
+          }
+
+          <button
+            class="btn btn-secondary"
+            onclick="viewStudentMarksheet('${id}')">
+            <i class="fa fa-file-invoice"></i>
+            View Result
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    openModal(
+      "Student Profile",
+      html
+    );
+
+  } catch (error) {
+    console.error("Error loading student profile:", error);
+
+    alert(
+      "Unable to load student profile.\n\n" +
+      "Please check your internet connection."
+    );
+  }
+};
 };
 
 /* ===================================================
