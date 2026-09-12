@@ -687,13 +687,13 @@ async function loadStudents() {
 
         <td class="student-actions">
 
-<button
-  type="button"
-  class="btn btn-secondary btn-sm"
-  onclick="window.viewStudentProfile('${studentId}')"
-  title="View Student Profile">
-  <i class="fa fa-eye"></i>
-</button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            onclick="window.viewStudentProfile('${studentId}')"
+            title="View Student Profile">
+            <i class="fa fa-eye"></i>
+          </button>
 
           <button
             class="btn btn-secondary btn-sm"
