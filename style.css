@@ -979,3 +979,150 @@ textarea:focus {
     padding: 15px;
   }
 }
+
+/* =========================================================
+   STUDENT PROFILE
+   ========================================================= */
+
+.student-profile {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Profile Header */
+.student-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.20);
+}
+
+.student-profile-avatar {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  font-size: 30px;
+}
+
+.student-profile-title h2 {
+  margin: 0 0 6px;
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.student-profile-title p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.student-profile-title strong {
+  color: #fff;
+}
+
+/* Information Grid */
+.student-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.profile-info-card {
+  padding: 17px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.profile-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.profile-label i {
+  color: #6366f1;
+}
+
+.profile-info-card strong {
+  display: block;
+  color: #1f2937;
+  font-size: 15px;
+  word-break: break-word;
+}
+
+/* Action Buttons */
+.student-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.student-profile-actions .btn {
+  min-height: 42px;
+  padding: 9px 16px;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+
+  .student-profile-header {
+    padding: 18px;
+    gap: 13px;
+  }
+
+  .student-profile-avatar {
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    font-size: 24px;
+  }
+
+  .student-profile-title h2 {
+    font-size: 18px;
+  }
+
+  .student-profile-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .profile-info-card {
+    padding: 14px;
+  }
+
+  .student-profile-actions {
+    flex-direction: column;
+  }
+
+  .student-profile-actions .btn {
+    width: 100%;
+  }
+}
