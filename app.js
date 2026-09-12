@@ -225,28 +225,335 @@ function closeModal() {
    MODULE 1: DASHBOARD
    =================================================== */
 async function loadDashboardData() {
-  const studentsSnap = await getDocs(collection(db, "students"));
-  const teachersSnap = await getDocs(collection(db, "teachers"));
-  const subjectsSnap = await getDocs(collection(db, "subjects"));
-  const examsSnap = await getDocs(collection(db, "exams"));
+  try {
+    // -----------------------------------------
+    // BASIC DASHBOARD COUNTS
+    // -----------------------------------------
+    const studentsSnap = await getDocs(collection(db, "students"));
+    const teachersSnap = await getDocs(collection(db, "teachers"));
+    const subjectsSnap = await getDocs(collection(db, "subjects"));
+    const examsSnap = await getDocs(collection(db, "exams"));
 
-  document.getElementById('dash-total-students').innerText = studentsSnap.size;
-  document.getElementById('dash-total-teachers').innerText = teachersSnap.size;
-  document.getElementById('dash-total-subjects').innerText = subjectsSnap.size;
-  document.getElementById('dash-total-exams').innerText = examsSnap.size;
+    document.getElementById('dash-total-students').innerText = studentsSnap.size;
+    document.getElementById('dash-total-teachers').innerText = teachersSnap.size;
+    document.getElementById('dash-total-subjects').innerText = subjectsSnap.size;
+    document.getElementById('dash-total-exams').innerText = examsSnap.size;
 
-  const counts = { "Class 1": 0, "Class 2": 0, "Class 3": 0, "Class 4": 0, "Class 5": 0 };
-  studentsSnap.forEach(doc => {
-    const cls = doc.data().class;
-    if (counts[cls] !== undefined) counts[cls]++;
+    // -----------------------------------------
+    // CLASS BREAKDOWN
+    // -----------------------------------------
+    const counts = {
+      "Class 1": 0,
+      "Class 2": 0,
+      "Class 3": 0,
+      "Class 4": 0,
+      "Class 5": 0
+    };
+
+    studentsSnap.forEach(docSnap => {
+      const data = docSnap.data();
+      const cls = data.class;
+
+      if (counts[cls] !== undefined) {
+        counts[cls]++;
+      }
+    });
+
+    document.getElementById('dash-c1').innerText =
+      `${counts["Class 1"]} Students`;
+
+    document.getElementById('dash-c2').innerText =
+      `${counts["Class 2"]} Students`;
+
+    document.getElementById('dash-c3').innerText =
+      `${counts["Class 3"]} Students`;
+
+    document.getElementById('dash-c4').innerText =
+      `${counts["Class 4"]} Students`;
+
+    document.getElementById('dash-c5').innerText =
+      `${counts["Class 5"]} Students`;
+
+    // -----------------------------------------
+    // TODAY'S DATE
+    // -----------------------------------------
+    const today = new Date();
+
+    const formattedDate = today.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    const dateElement = document.getElementById('dashboard-today');
+
+    if (dateElement) {
+      dateElement.innerText = formattedDate;
+    }
+
+    // -----------------------------------------
+    // TODAY'S ATTENDANCE
+    // -----------------------------------------
+    await loadDashboardAttendance();
+
+    // -----------------------------------------
+    // UPCOMING EXAMS
+    // -----------------------------------------
+    loadDashboardExams(examsSnap);
+
+    // -----------------------------------------
+    // RECENT NOTICES
+    // -----------------------------------------
+    await loadDashboardNotices();
+
+  } catch (error) {
+    console.error("Dashboard loading error:", error);
+  }
+}
+async function loadDashboardAttendance() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const attendanceSnap = await getDocs(
+      collection(db, "attendance")
+    );
+
+    let present = 0;
+    let absent = 0;
+    let leave = 0;
+
+    attendanceSnap.forEach(docSnap => {
+      const data = docSnap.data();
+
+      if (data.date === today) {
+        const status = String(data.status || '').toLowerCase();
+
+        if (status === 'present') {
+          present++;
+        } else if (status === 'absent') {
+          absent++;
+        } else if (status === 'leave') {
+          leave++;
+        }
+      }
+    });
+
+    const total = present + absent + leave;
+
+    let rate = 0;
+
+    if (total > 0) {
+      rate = Math.round((present / total) * 100);
+    }
+
+    const presentElement = document.getElementById(
+      'dash-present-today'
+    );
+
+    const absentElement = document.getElementById(
+      'dash-absent-today'
+    );
+
+    const leaveElement = document.getElementById(
+      'dash-leave-today'
+    );
+
+    const rateElement = document.getElementById(
+      'dash-attendance-rate'
+    );
+
+    const progressElement = document.getElementById(
+      'dash-attendance-progress'
+    );
+
+    if (presentElement) presentElement.innerText = present;
+    if (absentElement) absentElement.innerText = absent;
+    if (leaveElement) leaveElement.innerText = leave;
+    if (rateElement) rateElement.innerText = `${rate}%`;
+
+    if (progressElement) {
+      progressElement.style.width = `${rate}%`;
+    }
+
+  } catch (error) {
+    console.error("Dashboard attendance error:", error);
+  }
+}
+
+function loadDashboardExams(examsSnap) {
+  const container = document.getElementById(
+    'dashboard-upcoming-exams'
+  );
+
+  if (!container) return;
+
+  const exams = [];
+
+  examsSnap.forEach(docSnap => {
+    const data = docSnap.data();
+
+    exams.push({
+      id: docSnap.id,
+      ...data
+    });
   });
 
-  document.getElementById('dash-c1').innerText = `${counts["Class 1"]} Students`;
-  document.getElementById('dash-c2').innerText = `${counts["Class 2"]} Students`;
-  document.getElementById('dash-c3').innerText = `${counts["Class 3"]} Students`;
-  document.getElementById('dash-c4').innerText = `${counts["Class 4"]} Students`;
-  document.getElementById('dash-c5').innerText = `${counts["Class 5"]} Students`;
+  // Try to sort by exam date
+  exams.sort((a, b) => {
+    const dateA = new Date(a.date || a.examDate || '9999-12-31');
+    const dateB = new Date(b.date || b.examDate || '9999-12-31');
+
+    return dateA - dateB;
+  });
+
+  const upcoming = exams.slice(0, 5);
+
+  if (upcoming.length === 0) {
+    container.innerHTML = `
+      <div class="dashboard-empty">
+        <i class="fa fa-calendar"></i>
+        <span>No upcoming exams</span>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '';
+
+  upcoming.forEach(exam => {
+    const examName =
+      exam.name ||
+      exam.examName ||
+      exam.title ||
+      'Examination';
+
+    const examDate =
+      exam.date ||
+      exam.examDate ||
+      '';
+
+    const item = document.createElement('div');
+
+    item.className = 'dashboard-list-item';
+
+    item.innerHTML = `
+      <div class="list-icon exam-icon">
+        <i class="fa fa-file-alt"></i>
+      </div>
+
+      <div class="list-content">
+        <strong>${examName}</strong>
+        <span>${examDate || 'Date not specified'}</span>
+      </div>
+    `;
+
+    container.appendChild(item);
+  });
 }
+
+async function loadDashboardNotices() {
+  const container = document.getElementById(
+    'dashboard-recent-notices'
+  );
+
+  if (!container) return;
+
+  try {
+    const noticesSnap = await getDocs(
+      collection(db, "notices")
+    );
+
+    const notices = [];
+
+    noticesSnap.forEach(docSnap => {
+      const data = docSnap.data();
+
+      notices.push({
+        id: docSnap.id,
+        ...data
+      });
+    });
+
+    notices.sort((a, b) => {
+      const dateA = new Date(
+        a.date ||
+        a.createdAt ||
+        '1970-01-01'
+      );
+
+      const dateB = new Date(
+        b.date ||
+        b.createdAt ||
+        '1970-01-01'
+      );
+
+      return dateB - dateA;
+    });
+
+    const recentNotices = notices.slice(0, 5);
+
+    if (recentNotices.length === 0) {
+      container.innerHTML = `
+        <div class="dashboard-empty">
+          <i class="fa fa-bell"></i>
+          <span>No notices available</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+
+    recentNotices.forEach(notice => {
+      const title =
+        notice.title ||
+        notice.name ||
+        'School Notice';
+
+      const description =
+        notice.description ||
+        notice.message ||
+        notice.content ||
+        '';
+
+      const date =
+        notice.date ||
+        '';
+
+      const item = document.createElement('div');
+
+      item.className = 'dashboard-list-item';
+
+      item.innerHTML = `
+        <div class="list-icon notice-icon">
+          <i class="fa fa-bullhorn"></i>
+        </div>
+
+        <div class="list-content">
+          <strong>${title}</strong>
+          <span>
+            ${description || date || 'School announcement'}
+          </span>
+        </div>
+      `;
+
+      container.appendChild(item);
+    });
+
+  } catch (error) {
+    console.error("Dashboard notices error:", error);
+
+    container.innerHTML = `
+      <div class="dashboard-empty">
+        <i class="fa fa-exclamation-circle"></i>
+        <span>Unable to load notices</span>
+      </div>
+    `;
+  }
+}
+
+
 
 /* ===================================================
    MODULE 2: STUDENT MANAGEMENT
