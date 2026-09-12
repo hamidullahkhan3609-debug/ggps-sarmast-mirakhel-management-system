@@ -147,6 +147,18 @@ function setupEventListeners() {
   document.getElementById('add-timetable-btn')?.addEventListener('click', () => openTimetableModal());
   document.getElementById('add-notice-btn')?.addEventListener('click', () => openNoticeModal());
   document.getElementById('add-user-btn')?.addEventListener('click', () => openUserModal());
+  // Dashboard Quick Actions
+document.getElementById('dashboard-add-student')
+  ?.addEventListener('click', () => openStudentModal());
+
+document.getElementById('dashboard-attendance')
+  ?.addEventListener('click', () => openAttendanceModal());
+
+document.getElementById('dashboard-marks')
+  ?.addEventListener('click', () => openMarksModal());
+
+document.getElementById('dashboard-notice')
+  ?.addEventListener('click', () => openNoticeModal());
 
   // Search and Filters
   document.getElementById('student-search')?.addEventListener('input', loadStudents);
