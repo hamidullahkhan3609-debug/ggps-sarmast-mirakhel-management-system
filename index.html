@@ -108,6 +108,143 @@
             <div class="stat-card mini"><h4>Class 4</h4><p id="dash-c4">0 Students</p></div>
             <div class="stat-card mini"><h4>Class 5</h4><p id="dash-c5">0 Students</p></div>
           </div>
+          <!-- DASHBOARD QUICK ACTIONS -->
+<div class="dashboard-section-title">
+  <div>
+    <h3>Quick Actions</h3>
+    <p>Common school management tasks</p>
+  </div>
+  <div class="dashboard-date">
+    <i class="fa fa-calendar-day"></i>
+    <span id="dashboard-today">Today</span>
+  </div>
+</div>
+
+<div class="quick-actions-grid">
+
+  <button class="quick-action-card" id="dashboard-add-student">
+    <div class="quick-action-icon">
+      <i class="fa fa-user-plus"></i>
+    </div>
+    <div>
+      <strong>Add Student</strong>
+      <span>Register a new student</span>
+    </div>
+  </button>
+
+  <button class="quick-action-card" id="dashboard-attendance">
+    <div class="quick-action-icon">
+      <i class="fa fa-calendar-check"></i>
+    </div>
+    <div>
+      <strong>Mark Attendance</strong>
+      <span>Record today's attendance</span>
+    </div>
+  </button>
+
+  <button class="quick-action-card" id="dashboard-marks">
+    <div class="quick-action-icon">
+      <i class="fa fa-edit"></i>
+    </div>
+    <div>
+      <strong>Enter Marks</strong>
+      <span>Enter student examination marks</span>
+    </div>
+  </button>
+
+  <button class="quick-action-card" id="dashboard-notice">
+    <div class="quick-action-icon">
+      <i class="fa fa-bullhorn"></i>
+    </div>
+    <div>
+      <strong>Add Notice</strong>
+      <span>Publish a school notice</span>
+    </div>
+  </button>
+
+</div>
+
+<!-- DASHBOARD INFORMATION PANELS -->
+<div class="dashboard-info-grid">
+
+  <!-- ATTENDANCE -->
+  <div class="dashboard-panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Today's Attendance</h3>
+        <p>Current attendance overview</p>
+      </div>
+      <i class="fa fa-user-check"></i>
+    </div>
+
+    <div class="attendance-summary">
+      <div class="attendance-box present">
+        <strong id="dash-present-today">0</strong>
+        <span>Present</span>
+      </div>
+
+      <div class="attendance-box absent">
+        <strong id="dash-absent-today">0</strong>
+        <span>Absent</span>
+      </div>
+
+      <div class="attendance-box leave">
+        <strong id="dash-leave-today">0</strong>
+        <span>Leave</span>
+      </div>
+    </div>
+
+    <div class="attendance-progress">
+      <div class="progress-label">
+        <span>Attendance Rate</span>
+        <strong id="dash-attendance-rate">0%</strong>
+      </div>
+
+      <div class="progress-track">
+        <div id="dash-attendance-progress" class="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPCOMING EXAMS -->
+  <div class="dashboard-panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Upcoming Exams</h3>
+        <p>Recently scheduled examinations</p>
+      </div>
+      <i class="fa fa-file-alt"></i>
+    </div>
+
+    <div id="dashboard-upcoming-exams" class="dashboard-list">
+      <div class="dashboard-empty">
+        <i class="fa fa-calendar"></i>
+        <span>No upcoming exams</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- RECENT NOTICES -->
+<div class="dashboard-panel dashboard-notices-panel">
+
+  <div class="panel-heading">
+    <div>
+      <h3>Recent Notices</h3>
+      <p>Latest school announcements</p>
+    </div>
+    <i class="fa fa-bullhorn"></i>
+  </div>
+
+  <div id="dashboard-recent-notices" class="dashboard-list">
+    <div class="dashboard-empty">
+      <i class="fa fa-bell"></i>
+      <span>No notices available</span>
+    </div>
+  </div>
+
+</div>
         </section>
 
         <!-- STUDENTS VIEW -->
