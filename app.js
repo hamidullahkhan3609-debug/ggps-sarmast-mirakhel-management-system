@@ -1021,7 +1021,9 @@ window.openStudentModal = async function(id = null) {
       );
     }
   };
-  // =========================================================
+ 
+};
+// =========================================================
 // STUDENT PROFILE VIEW
 // =========================================================
 
@@ -1141,7 +1143,7 @@ window.viewStudentProfile = async function(id) {
               ? `
                 <button
                   class="btn btn-primary"
-                  onclick="closeModal(); openStudentModal('${id}')">
+                  onclick="closeModal(); window.openStudentModal('${id}')">
                   <i class="fa fa-edit"></i>
                   Edit Student
                 </button>
@@ -1151,7 +1153,7 @@ window.viewStudentProfile = async function(id) {
 
           <button
             class="btn btn-secondary"
-            onclick="viewStudentMarksheet('${id}')">
+            onclick="window.viewStudentMarksheet('${id}')">
             <i class="fa fa-file-invoice"></i>
             View Result
           </button>
@@ -1161,10 +1163,7 @@ window.viewStudentProfile = async function(id) {
       </div>
     `;
 
-    openModal(
-      "Student Profile",
-      html
-    );
+    openModal("Student Profile", html);
 
   } catch (error) {
     console.error("Error loading student profile:", error);
@@ -1175,8 +1174,6 @@ window.viewStudentProfile = async function(id) {
     );
   }
 };
-};
-
 /* ===================================================
    MODULE 3: TEACHER MANAGEMENT
    =================================================== */
