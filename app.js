@@ -570,49 +570,204 @@ async function loadDashboardNotices() {
 /* ===================================================
    MODULE 2: STUDENT MANAGEMENT
    =================================================== */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 async function loadStudents() {
   const tbody = document.getElementById('students-table-body');
+
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7">Loading students...</td></tr>`;
 
-  let q = collection(db, "students");
-  if (userRole === 'student') {
-    q = query(q, where("userId", "==", currentUser.uid));
-  }
-
-  const snap = await getDocs(q);
-  const filterClass = document.getElementById('student-filter-class')?.value;
-  const search = document.getElementById('student-search')?.value.toLowerCase();
-
-  tbody.innerHTML = '';
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-    data.id = docSnap.id;
-
-    if (filterClass && data.class !== filterClass) return;
-    if (search && !data.name.toLowerCase().includes(search) && 
-        !data.fatherName.toLowerCase().includes(search) && 
-        !data.admissionNumber.toLowerCase().includes(search)) return;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${data.admissionNumber}</td>
-      <td>${data.name}</td>
-      <td>${data.fatherName}</td>
-      <td>${data.class}</td>
-      <td>${data.dateOfBirth || ''}</td>
-      <td>${data.phone || ''}</td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick="viewStudentMarksheet('${data.id}')"><i class="fa fa-file-invoice"></i> Result</button>
-        ${(userRole === 'superadmin' || userRole === 'admin') ? `<button class="btn btn-primary btn-sm" onclick="openStudentModal('${data.id}')"><i class="fa fa-edit"></i></button>` : ''}
-        ${(userRole === 'superadmin') ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('students', '${data.id}', loadStudents)"><i class="fa fa-trash"></i></button>` : ''}
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="loading-row">
+        Loading students...
       </td>
-    `;
-    tbody.appendChild(tr);
-  });
+    </tr>
+  `;
 
-  if (!tbody.hasChildNodes()) {
-    tbody.innerHTML = `<tr><td colspan="7">No student records found.</td></tr>`;
+  try {
+    let q = collection(db, "students");
+
+    // Students can only see their own record
+    if (userRole === 'student') {
+      q = query(q, where("userId", "==", currentUser.uid));
+    }
+
+    const snap = await getDocs(q);
+
+    const filterClass =
+      document.getElementById('student-filter-class')?.value || '';
+
+    const search =
+      document.getElementById('student-search')?.value
+        .trim()
+        .toLowerCase() || '';
+
+    tbody.innerHTML = '';
+
+    let visibleStudents = 0;
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+
+      const studentId = docSnap.id;
+
+      const name =
+        String(data.name || '');
+
+      const fatherName =
+        String(data.fatherName || '');
+
+      const admissionNumber =
+        String(data.admissionNumber || '');
+
+      const studentClass =
+        String(data.class || '');
+
+      // Class filter
+      if (
+        filterClass &&
+        studentClass !== filterClass
+      ) {
+        return;
+      }
+
+      // Search
+      const searchableText = `
+        ${name}
+        ${fatherName}
+        ${admissionNumber}
+        ${studentClass}
+      `.toLowerCase();
+
+      if (
+        search &&
+        !searchableText.includes(search)
+      ) {
+        return;
+      }
+
+      visibleStudents++;
+
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>
+          <strong>${escapeHtml(admissionNumber)}</strong>
+        </td>
+
+        <td>
+          <strong>${escapeHtml(name)}</strong>
+        </td>
+
+        <td>
+          ${escapeHtml(fatherName)}
+        </td>
+
+        <td>
+          <span class="class-badge">
+            ${escapeHtml(studentClass)}
+          </span>
+        </td>
+
+        <td>
+          ${escapeHtml(data.dateOfBirth || '-')}
+        </td>
+
+        <td>
+          ${escapeHtml(data.phone || '-')}
+        </td>
+
+        <td class="student-actions">
+
+          <button
+            class="btn btn-secondary btn-sm"
+            onclick="viewStudentProfile('${studentId}')"
+            title="View Student Profile">
+            <i class="fa fa-eye"></i>
+          </button>
+
+          <button
+            class="btn btn-secondary btn-sm"
+            onclick="viewStudentMarksheet('${studentId}')"
+            title="View Result">
+            <i class="fa fa-file-invoice"></i>
+          </button>
+
+          ${
+            (userRole === 'superadmin' || userRole === 'admin')
+              ? `
+                <button
+                  class="btn btn-primary btn-sm"
+                  onclick="openStudentModal('${studentId}')"
+                  title="Edit Student">
+                  <i class="fa fa-edit"></i>
+                </button>
+              `
+              : ''
+          }
+
+          ${
+            userRole === 'superadmin'
+              ? `
+                <button
+                  class="btn btn-danger btn-sm"
+                  onclick="deleteRecord(
+                    'students',
+                    '${studentId}',
+                    loadStudents
+                  )"
+                  title="Delete Student">
+                  <i class="fa fa-trash"></i>
+                </button>
+              `
+              : ''
+          }
+
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    if (visibleStudents === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty-row">
+            <div class="table-empty-state">
+              <i class="fa fa-user-graduate"></i>
+              <strong>No students found</strong>
+              <span>
+                Try changing the search or class filter.
+              </span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error loading students:",
+      error
+    );
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="error-row">
+          <i class="fa fa-exclamation-triangle"></i>
+          Unable to load student records.
+        </td>
+      </tr>
+    `;
   }
 }
 
