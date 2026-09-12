@@ -772,19 +772,6 @@ async function loadStudents() {
 }
 
 window.openStudentModal = async function(id = null) {
-  let student = { name: '', fatherName: '', admissionNumber: '', class: 'Class 1', classId: '', dateOfBirth: '', phone: '', admissionDate: '' };
-  if (id) {
-    const sDoc = await getDoc(doc(db, "students", id));
-    if (sDoc.exists()) student = sDoc.data();
-  }
-
-  const html = `
-    <form id="student-form">
-      <div class="form-group">
-        <label for="s-name">Student Name *</label>
-        <input type="text" id="s-name" value="${student.name}" required placeholder="Enter student name">
-      </div>
-window.openStudentModal = async function(id = null) {
   let student = {
     name: '',
     fatherName: '',
