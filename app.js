@@ -232,7 +232,7 @@ function closeModal() {
   const mo = document.getElementById('modal-overlay');
   if (mo) mo.style.display = 'none';
 }
-
+window.closeModal = closeModal;
 /* ===================================================
    MODULE 1: DASHBOARD
    =================================================== */
@@ -705,12 +705,13 @@ async function loadStudents() {
           ${
             (userRole === 'superadmin' || userRole === 'admin')
               ? `
-                <button
-                  class="btn btn-primary btn-sm"
-                  onclick="openStudentModal('${studentId}')"
-                  title="Edit Student">
-                  <i class="fa fa-edit"></i>
-                </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${id}'), 100)">
+                <i class="fa fa-edit"></i>
+                Edit Student
+              </button>
               `
               : ''
           }
