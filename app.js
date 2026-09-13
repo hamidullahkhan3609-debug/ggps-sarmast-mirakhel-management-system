@@ -1179,7 +1179,6 @@ window.viewStudentProfile = async function(id) {
     );
   }
 };
-};
 /* ===================================================
    MODULE 3: TEACHER MANAGEMENT
    =================================================== */
