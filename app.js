@@ -1168,30 +1168,17 @@ window.viewStudentProfile = async function(id) {
     openModal("Student Profile", html);
 
 } catch (error) {
-  console.error("FULL STUDENTS ERROR:", error);
-
-  alert(
-    "Students loading error:\n\n" +
-    (error.code || "No error code") +
-    "\n\n" +
-    (error.message || error)
-  );
-
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="7" class="error-row">
-        <i class="fa fa-exclamation-triangle"></i>
-        ${escapeHtml(error.message || "Unable to load students.")}
-      </td>
-    </tr>
-  `;
-  }
+  } catch (error) {
+    console.error("Error loading student profile:", error);
 
     alert(
       "Unable to load student profile.\n\n" +
-      "Please check your internet connection."
+      (error.code || "Unknown error") +
+      "\n\n" +
+      (error.message || "Please check your internet connection.")
     );
   }
+};
 };
 /* ===================================================
    MODULE 3: TEACHER MANAGEMENT
