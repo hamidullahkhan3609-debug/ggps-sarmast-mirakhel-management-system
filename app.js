@@ -1142,13 +1142,13 @@ window.viewStudentProfile = async function(id) {
           ${
             (userRole === 'superadmin' || userRole === 'admin')
               ? `
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${id}'), 100)">
-                  <i class="fa fa-edit"></i>
-                  Edit Student
-                </button>
+<button
+  type="button"
+  class="btn btn-primary btn-sm"
+  onclick="window.openStudentModal('${studentId}')"
+  title="Edit Student">
+  <i class="fa fa-edit"></i>
+</button>
               `
               : ''
           }
