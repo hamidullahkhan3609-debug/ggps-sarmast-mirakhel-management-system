@@ -792,7 +792,7 @@ async function loadStudents() {
               <button
                 type="button"
                 class="btn btn-primary"
-                onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${Id}'), 100)">
+                onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${studentId}'), 100)">
                 <i class="fa fa-edit"></i>
                 Edit Student
               </button>
@@ -1229,7 +1229,7 @@ window.viewStudentProfile = async function(id) {
 <button
   type="button"
   class="btn btn-primary btn-sm"
-  onclick="window.openStudentModal('${studentId}')"
+  onclick="window.openStudentModal('${Id}')"
   title="Edit Student">
   <i class="fa fa-edit"></i>
 </button>
