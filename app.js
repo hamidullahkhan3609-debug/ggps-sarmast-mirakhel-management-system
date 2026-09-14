@@ -1530,35 +1530,118 @@ window.viewTeacherProfile = async function(id) {
    =================================================== */
 async function loadSubjects() {
   const tbody = document.getElementById('subjects-table-body');
+
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="3">Loading subjects...</td></tr>`;
 
-  const snap = await getDocs(collection(db, "subjects"));
-  const filterClass = document.getElementById('subject-filter-class')?.value;
-
-  tbody.innerHTML = '';
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-    data.id = docSnap.id;
-
-    if (filterClass && data.class !== filterClass) return;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${data.name}</td>
-      <td>${data.class}</td>
-      <td>
-        ${(userRole === 'superadmin' || userRole === 'admin') ? `<button class="btn btn-primary btn-sm" onclick="openSubjectModal('${data.id}')"><i class="fa fa-edit"></i></button>` : ''}
-        ${(userRole === 'superadmin') ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('subjects', '${data.id}', loadSubjects)"><i class="fa fa-trash"></i></button>` : ''}
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="3" class="loading-row">
+        Loading subjects...
       </td>
-    `;
-    tbody.appendChild(tr);
-  });
+    </tr>
+  `;
 
-  if (!tbody.hasChildNodes()) {
-    tbody.innerHTML = `<tr><td colspan="3">No subjects found.</td></tr>`;
+  try {
+    const snap = await getDocs(collection(db, "subjects"));
+
+    const filterClass =
+      document.getElementById('subject-filter-class')?.value || '';
+
+    tbody.innerHTML = '';
+
+    let visibleSubjects = 0;
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const subjectId = docSnap.id;
+
+      const name = String(data.name || '');
+      const subjectClass = String(data.class || '');
+
+      if (filterClass && subjectClass !== filterClass) return;
+
+      visibleSubjects++;
+
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>
+          <strong>${escapeHtml(name || '-')}</strong>
+        </td>
+
+        <td>
+          <span class="class-badge">
+            ${escapeHtml(subjectClass || '-')}
+          </span>
+        </td>
+
+        <td class="subject-actions">
+
+          ${
+            (userRole === 'superadmin' || userRole === 'admin')
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  onclick="window.openSubjectModal('${subjectId}')"
+                  title="Edit Subject"
+                >
+                  <i class="fa fa-edit"></i>
+                </button>
+              `
+              : ''
+          }
+
+          ${
+            userRole === 'superadmin'
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  onclick="window.deleteRecord('subjects', '${subjectId}', window.loadSubjects)"
+                  title="Delete Subject"
+                >
+                  <i class="fa fa-trash"></i>
+                </button>
+              `
+              : ''
+          }
+
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    if (visibleSubjects === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3" class="empty-row">
+            <div class="table-empty-state">
+              <i class="fa fa-book"></i>
+              <strong>No subjects found</strong>
+              <span>No subjects match the selected class.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+  } catch (error) {
+    console.error("Error loading subjects:", error);
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3" class="error-row">
+          <i class="fa fa-exclamation-triangle"></i>
+          Unable to load subject records.
+        </td>
+      </tr>
+    `;
   }
 }
+
+window.loadSubjects = loadSubjects;
 
 window.openSubjectModal = async function(id = null) {
   let sub = { name: '', class: 'Class 1' };
@@ -1569,7 +1652,16 @@ window.openSubjectModal = async function(id = null) {
 
   const html = `
     <form id="subject-form">
-      <div class="form-group"><label for="sub-name">Subject Name *</label><input type="text" id="sub-name" value="${sub.name}" required></div>
+      <div class="form-group">
+  <label for="sub-name">Subject Name *</label>
+  <input
+    type="text"
+    id="sub-name"
+    value="${sub.name || ''}"
+    placeholder="e.g. English"
+    required
+  >
+</div>
       <div class="form-group"><label for="sub-class">Class *</label>
         <select id="sub-class">
           ${['Class 1','Class 2','Class 3','Class 4','Class 5'].map(c => `<option value="${c}" ${sub.class === c ? 'selected' : ''}>${c}</option>`).join('')}
