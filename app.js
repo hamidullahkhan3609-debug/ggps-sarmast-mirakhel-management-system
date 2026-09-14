@@ -158,37 +158,38 @@ function setupEventListeners() {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (authError) authError.style.display = 'none';
+      
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
       const btn = document.getElementById('login-btn');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerText = "Signing in...";
-      }
 
-try {
-  if (authStatus) {
-    authStatus.innerText = "Signing in to school system...";
-  }
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = "Signing in...";
+        }
 
-  const result = await signInWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
+        if (authStatus) {
+          authStatus.innerText = "Signing in to school system...";
+        }
 
-  console.log("AUTHENTICATION SUCCESS:", result.user.uid);
+        const result = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
 
-} catch (err) {
-  console.error("SIGN IN ERROR:", err);
+        console.log("AUTHENTICATION SUCCESS:", result.user.uid);
 
-  showAuthError(
-    "Authentication failed.\n\n" +
-    (err.code || "Unknown error") +
-    "\n\n" +
-    (err.message || err)
-  );
-}
+      } catch (err) {
+        console.error("SIGN IN ERROR:", err);
+
+        showAuthError(
+          "Authentication failed.\n\n" +
+          (err.code || "Unknown error") +
+          "\n\n" +
+          (err.message || err)
+        );
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -197,6 +198,7 @@ try {
       }
     });
   }
+
 
   document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
 
@@ -396,7 +398,7 @@ async function loadDashboardData() {
     // -----------------------------------------
     loadDashboardExams(examsSnap);
 
-    // -----------------------------------------
+    // ----------------------------------------
     // RECENT NOTICES
     // -----------------------------------------
     await loadDashboardNotices();
@@ -790,7 +792,7 @@ async function loadStudents() {
               <button
                 type="button"
                 class="btn btn-primary"
-                onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${id}'), 100)">
+                onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${studentId}'), 100)">
                 <i class="fa fa-edit"></i>
                 Edit Student
               </button>
