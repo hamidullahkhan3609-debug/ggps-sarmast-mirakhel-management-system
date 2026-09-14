@@ -1192,39 +1192,156 @@ window.viewStudentProfile = async function(id) {
    =================================================== */
 async function loadTeachers() {
   const tbody = document.getElementById('teachers-table-body');
+
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7">Loading teachers...</td></tr>`;
 
-  const snap = await getDocs(collection(db, "teachers"));
-  const search = document.getElementById('teacher-search')?.value.toLowerCase();
-
-  tbody.innerHTML = '';
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-    data.id = docSnap.id;
-
-    if (search && !data.name.toLowerCase().includes(search) && !data.email.toLowerCase().includes(search)) return;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${data.name}</td>
-      <td>${data.fatherName || ''}</td>
-      <td>${data.email}</td>
-      <td>${data.phone || ''}</td>
-      <td>${data.assignedClass || 'None'}</td>
-      <td>${data.subjects ? data.subjects.join(', ') : 'None'}</td>
-      <td>
-        ${(userRole === 'superadmin' || userRole === 'admin') ? `<button class="btn btn-primary btn-sm" onclick="openTeacherModal('${data.id}')"><i class="fa fa-edit"></i></button>` : ''}
-        ${(userRole === 'superadmin') ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('teachers', '${data.id}', loadTeachers)"><i class="fa fa-trash"></i></button>` : ''}
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="loading-row">
+        Loading teachers...
       </td>
-    `;
-    tbody.appendChild(tr);
-  });
+    </tr>
+  `;
 
-  if (!tbody.hasChildNodes()) {
-    tbody.innerHTML = `<tr><td colspan="7">No teacher records found.</td></tr>`;
+  try {
+    const snap = await getDocs(collection(db, "teachers"));
+
+    const search =
+      document.getElementById('teacher-search')?.value
+        .trim()
+        .toLowerCase() || '';
+
+    tbody.innerHTML = '';
+
+    let visibleTeachers = 0;
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const teacherId = docSnap.id;
+
+      const name = String(data.name || '');
+      const fatherName = String(data.fatherName || '');
+      const email = String(data.email || '');
+      const phone = String(data.phone || '');
+      const assignedClass = String(data.assignedClass || 'None');
+
+      const subjects = Array.isArray(data.subjects)
+        ? data.subjects.join(', ')
+        : String(data.subjects || 'None');
+
+      const searchableText =
+        `${name} ${fatherName} ${email} ${phone} ${assignedClass} ${subjects}`
+          .toLowerCase();
+
+      if (search && !searchableText.includes(search)) return;
+
+      visibleTeachers++;
+
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>
+          <strong>${escapeHtml(name || '-')}</strong>
+        </td>
+
+        <td>
+          ${escapeHtml(fatherName || '-')}
+        </td>
+
+        <td>
+          ${escapeHtml(email || '-')}
+        </td>
+
+        <td>
+          ${escapeHtml(phone || '-')}
+        </td>
+
+        <td>
+          <span class="class-badge">
+            ${escapeHtml(assignedClass)}
+          </span>
+        </td>
+
+        <td>
+          ${escapeHtml(subjects)}
+        </td>
+
+        <td class="teacher-actions">
+
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            onclick="window.viewTeacherProfile('${teacherId}')"
+            title="View Teacher Profile"
+          >
+            <i class="fa fa-eye"></i>
+          </button>
+
+          ${
+            (userRole === 'superadmin' || userRole === 'admin')
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  onclick="window.openTeacherModal('${teacherId}')"
+                  title="Edit Teacher"
+                >
+                  <i class="fa fa-edit"></i>
+                </button>
+              `
+              : ''
+          }
+
+          ${
+            userRole === 'superadmin'
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  onclick="window.deleteRecord('teachers', '${teacherId}', window.loadTeachers)"
+                  title="Delete Teacher"
+                >
+                  <i class="fa fa-trash"></i>
+                </button>
+              `
+              : ''
+          }
+
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    if (visibleTeachers === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty-row">
+            <div class="table-empty-state">
+              <i class="fa fa-chalkboard-teacher"></i>
+              <strong>No teachers found</strong>
+              <span>Try a different search.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+  } catch (error) {
+    console.error("Error loading teachers:", error);
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="error-row">
+          <i class="fa fa-exclamation-triangle"></i>
+          Unable to load teacher records.
+        </td>
+      </tr>
+    `;
   }
 }
+
+window.loadTeachers = loadTeachers;
 
 window.openTeacherModal = async function(id = null) {
   let teacher = { name: '', fatherName: '', phone: '', email: '', assignedClass: 'Class 1', subjects: '' };
@@ -1241,7 +1358,16 @@ window.openTeacherModal = async function(id = null) {
       <div class="form-group"><label for="t-name">Teacher Name *</label><input type="text" id="t-name" value="${teacher.name}" required></div>
       <div class="form-group"><label for="t-father">Father Name</label><input type="text" id="t-father" value="${teacher.fatherName}"></div>
       <div class="form-group"><label for="t-email">Email *</label><input type="email" id="t-email" value="${teacher.email}" required></div>
-      <div class="form-group"><label for="t-phone">Phone</label><input type="text" id="t-phone" value="${teacher.phone}"></div>
+      <div class="form-group">
+        <label for="t-phone">Phone Number</label>
+        <input
+          type="tel"
+          id="t-phone"
+          value="${teacher.phone || ''}"
+          placeholder="03XX-XXXXXXX"
+          inputmode="tel"
+      >
+      </div>
       <div class="form-group"><label for="t-class">Assigned Class</label>
         <select id="t-class">
           ${['Class 1','Class 2','Class 3','Class 4','Class 5'].map(c => `<option value="${c}" ${teacher.assignedClass === c ? 'selected' : ''}>${c}</option>`).join('')}
@@ -1275,6 +1401,128 @@ window.openTeacherModal = async function(id = null) {
     closeModal();
     loadTeachers();
   };
+};
+// =========================================================
+// TEACHER PROFILE VIEW
+// =========================================================
+window.viewTeacherProfile = async function(id) {
+  try {
+    const teacherRef = doc(db, "teachers", id);
+    const teacherSnap = await getDoc(teacherRef);
+
+    if (!teacherSnap.exists()) {
+      alert("Teacher record not found.");
+      return;
+    }
+
+    const teacher = teacherSnap.data();
+
+    const name = teacher.name || '-';
+    const fatherName = teacher.fatherName || '-';
+    const email = teacher.email || '-';
+    const phone = teacher.phone || '-';
+    const assignedClass = teacher.assignedClass || 'None';
+
+    const subjects = Array.isArray(teacher.subjects)
+      ? teacher.subjects.join(', ')
+      : (teacher.subjects || 'None');
+
+    const html = `
+      <div class="student-profile">
+
+        <div class="student-profile-header">
+
+          <div class="student-profile-avatar">
+            <i class="fa fa-chalkboard-teacher"></i>
+          </div>
+
+          <div class="student-profile-title">
+            <h2>${escapeHtml(name)}</h2>
+            <p>
+              Teacher Profile
+            </p>
+          </div>
+
+        </div>
+
+        <div class="student-profile-grid">
+
+          <div class="profile-info-card">
+            <span class="profile-label">Teacher Name</span>
+            <strong>${escapeHtml(name)}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">Father Name</span>
+            <strong>${escapeHtml(fatherName)}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">Email</span>
+            <strong>${escapeHtml(email)}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">Phone</span>
+            <strong>${escapeHtml(phone)}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">Assigned Class</span>
+            <strong>${escapeHtml(assignedClass)}</strong>
+          </div>
+
+          <div class="profile-info-card">
+            <span class="profile-label">Assigned Subjects</span>
+            <strong>${escapeHtml(subjects)}</strong>
+          </div>
+
+        </div>
+
+        <div class="student-profile-actions">
+
+          ${
+            (userRole === 'superadmin' || userRole === 'admin')
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="
+                    window.closeModal();
+                    setTimeout(() => window.openTeacherModal('${id}'), 100);
+                  "
+                >
+                  <i class="fa fa-edit"></i>
+                  Edit Teacher
+                </button>
+              `
+              : ''
+          }
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="window.closeModal()"
+          >
+            <i class="fa fa-times"></i>
+            Close
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    openModal("Teacher Profile", html);
+
+  } catch (error) {
+    console.error("Error loading teacher profile:", error);
+
+    alert(
+      "Unable to load teacher profile.\\n\\n" +
+      (error.message || "Unknown error")
+    );
+  }
 };
 
 /* ===================================================
