@@ -18,32 +18,95 @@ const authStatus = document.getElementById('auth-status');
 const authError = document.getElementById('auth-error');
 
 // INITIALIZATION
-window.addEventListener('DOMContentLoaded', () => {
-  if (authStatus) authStatus.innerText = "Firebase connected. Ready.";
+function startApp() {
+  if (authStatus) {
+    authStatus.innerText = "Firebase connected. Ready.";
+  }
+
   setupEventListeners();
-  
+
   onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          currentUser = { uid: user.uid, ...userDoc.data() };
-          userRole = currentUser.role ? currentUser.role.toLowerCase().replace(/\s+/g, '') : 'student';
-          initializeUI();
-        } else {
-          showAuthError("No role profile found for this account. Please contact the Super Admin.");
-          await signOut(auth);
-        }
-      } catch (err) {
-        showAuthError("Error reading profile: " + err.message);
-      }
-    } else {
+
+    console.log("AUTH STATE:", user ? user.uid : "No user");
+
+    if (!user) {
       currentUser = null;
       userRole = null;
       showLoginView();
+
+      if (authStatus) {
+        authStatus.innerText = "Firebase connected. Ready.";
+      }
+
+      return;
+    }
+
+    // User is authenticated
+    if (authStatus) {
+      authStatus.innerText = "Loading your school account...";
+    }
+
+    try {
+      console.log("Reading user profile:", user.uid);
+
+      const userDoc = await getDoc(
+        doc(db, "users", user.uid)
+      );
+
+      console.log("User profile exists:", userDoc.exists());
+
+      if (!userDoc.exists()) {
+        showAuthError(
+          "Login successful, but no user profile was found. " +
+          "Please contact the Super Admin."
+        );
+
+        await signOut(auth);
+        return;
+      }
+
+      currentUser = {
+        uid: user.uid,
+        ...userDoc.data()
+      };
+
+      userRole = currentUser.role
+        ? currentUser.role.toLowerCase().replace(/\s+/g, '')
+        : 'student';
+
+      console.log("LOGIN SUCCESS:", currentUser);
+
+      // IMPORTANT: Enter the actual web app
+      if (loginContainer) {
+        loginContainer.style.display = 'none';
+      }
+
+      if (appContainer) {
+        appContainer.style.display = 'flex';
+      }
+
+      initializeUI();
+
+    } catch (err) {
+
+      console.error("LOGIN PROFILE ERROR:", err);
+
+      showAuthError(
+        "Login succeeded, but the school profile could not be loaded.\n\n" +
+        (err.code || "Unknown error") +
+        "\n\n" +
+        (err.message || "Unknown Firebase error")
+      );
+
+      if (authStatus) {
+        authStatus.innerText = "Unable to load school account.";
+      }
     }
   });
-});
+}
+
+// Start immediately because app.js is loaded at the bottom of index.html
+startApp();
 
 function showAuthError(msg) {
   if (authError) {
@@ -103,10 +166,29 @@ function setupEventListeners() {
         btn.innerText = "Signing in...";
       }
 
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        showAuthError("Authentication failed: " + err.message);
+try {
+  if (authStatus) {
+    authStatus.innerText = "Signing in to school system...";
+  }
+
+  const result = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+  console.log("AUTHENTICATION SUCCESS:", result.user.uid);
+
+} catch (err) {
+  console.error("SIGN IN ERROR:", err);
+
+  showAuthError(
+    "Authentication failed.\n\n" +
+    (err.code || "Unknown error") +
+    "\n\n" +
+    (err.message || err)
+  );
+}
       } finally {
         if (btn) {
           btn.disabled = false;
