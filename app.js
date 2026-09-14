@@ -1249,7 +1249,6 @@ window.viewStudentProfile = async function(id) {
 
     openModal("Student Profile", html);
 
-} catch (error) {
   } catch (error) {
     console.error("Error loading student profile:", error);
 
