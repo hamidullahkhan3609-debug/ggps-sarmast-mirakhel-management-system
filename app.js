@@ -662,456 +662,86 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-
 async function loadStudents() {
   const tbody = document.getElementById('students-table-body');
-
   if (!tbody) return;
 
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="7" class="loading-row">
-        Loading students...
-      </td>
-    </tr>
-  `;
+  tbody.innerHTML = `<tr><td colspan="7" class="loading-row">Loading students...</td></tr>`;
 
   try {
     let q = collection(db, "students");
 
-    // Students can only see their own record
     if (userRole === 'student') {
       q = query(q, where("userId", "==", currentUser.uid));
     }
 
     const snap = await getDocs(q);
-
-    const filterClass =
-      document.getElementById('student-filter-class')?.value || '';
-
-    const search =
-      document.getElementById('student-search')?.value
-        .trim()
-        .toLowerCase() || '';
+    const filterClass = document.getElementById('student-filter-class')?.value || '';
+    const search = document.getElementById('student-search')?.value.trim().toLowerCase() || '';
 
     tbody.innerHTML = '';
-
     let visibleStudents = 0;
 
     snap.forEach(docSnap => {
       const data = docSnap.data();
-
       const studentId = docSnap.id;
 
-      const name =
-        String(data.name || '');
+      const name = String(data.name || '');
+      const fatherName = String(data.fatherName || '');
+      const admissionNumber = String(data.admissionNumber || '');
+      const studentClass = String(data.class || '');
 
-      const fatherName =
-        String(data.fatherName || '');
+      if (filterClass && studentClass !== filterClass) return;
 
-      const admissionNumber =
-        String(data.admissionNumber || '');
-
-      const studentClass =
-        String(data.class || '');
-
-      // Class filter
-      if (
-        filterClass &&
-        studentClass !== filterClass
-      ) {
-        return;
-      }
-
-      // Search
-      const searchableText = `
-        ${name}
-        ${fatherName}
-        ${admissionNumber}
-        ${studentClass}
-      `.toLowerCase();
-
-      if (
-        search &&
-        !searchableText.includes(search)
-      ) {
-        return;
-      }
+      const searchableText = `${name} ${fatherName} ${admissionNumber} ${studentClass}`.toLowerCase();
+      if (search && !searchableText.includes(search)) return;
 
       visibleStudents++;
 
       const tr = document.createElement('tr');
-
       tr.innerHTML = `
-        <td>
-          <strong>${escapeHtml(admissionNumber)}</strong>
-        </td>
-
-        <td>
-          <strong>${escapeHtml(name)}</strong>
-        </td>
-
-        <td>
-          ${escapeHtml(fatherName)}
-        </td>
-
-        <td>
-          <span class="class-badge">
-            ${escapeHtml(studentClass)}
-          </span>
-        </td>
-
-        <td>
-          ${escapeHtml(data.dateOfBirth || '-')}
-        </td>
-
-        <td>
-          ${escapeHtml(data.phone || '-')}
-        </td>
-
+        <td><strong>${escapeHtml(admissionNumber)}</strong></td>
+        <td><strong>${escapeHtml(name)}</strong></td>
+        <td>${escapeHtml(fatherName)}</td>
+        <td><span class="class-badge">${escapeHtml(studentClass)}</span></td>
+        <td>${escapeHtml(data.dateOfBirth || '-')}</td>
+        <td>${escapeHtml(data.phone || '-')}</td>
         <td class="student-actions">
-
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            onclick="window.viewStudentProfile('${studentId}')"
-            title="View Student Profile">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.viewStudentProfile('${studentId}')" title="View Student Profile">
             <i class="fa fa-eye"></i>
           </button>
-
-          <button
-            class="btn btn-secondary btn-sm"
-            onclick="viewStudentMarksheet('${studentId}')"
-            title="View Result">
+          <button class="btn btn-secondary btn-sm" onclick="viewStudentMarksheet('${studentId}')" title="View Result">
             <i class="fa fa-file-invoice"></i>
           </button>
-
           ${
             (userRole === 'superadmin' || userRole === 'admin')
-              ? `
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${studentId}'), 100)">
-                <i class="fa fa-edit"></i>
-                Edit Student
-              </button>
-              `
+              ? `<button type="button" class="btn btn-primary btn-sm" onclick="window.openStudentModal('${studentId}')"><i class="fa fa-edit"></i> Edit</button>`
               : ''
           }
-
           ${
             userRole === 'superadmin'
-              ? `
-                <button
-                  class="btn btn-danger btn-sm"
-                  onclick="deleteRecord(
-                    'students',
-                    '${studentId}',
-                    loadStudents
-                  )"
-                  title="Delete Student">
-                  <i class="fa fa-trash"></i>
-                </button>
-              `
+              ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('students', '${studentId}', loadStudents)"><i class="fa fa-trash"></i></button>`
               : ''
           }
-
         </td>
       `;
-
       tbody.appendChild(tr);
     });
 
     if (visibleStudents === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="empty-row">
-            <div class="table-empty-state">
-              <i class="fa fa-user-graduate"></i>
-              <strong>No students found</strong>
-              <span>
-                Try changing the search or class filter.
-              </span>
-            </div>
-          </td>
-        </tr>
-      `;
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No students found</td></tr>`;
     }
 
   } catch (error) {
-
-    console.error(
-      "Error loading students:",
-      error
-    );
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="error-row">
-          <i class="fa fa-exclamation-triangle"></i>
-          Unable to load student records.
-        </td>
-      </tr>
-    `;
+    console.error("Error loading students:", error);
+    tbody.innerHTML = `<tr><td colspan="7" class="error-row">Unable to load student records.</td></tr>`;
   }
 }
 
-window.openStudentModal = async function(id = null) {
-  let student = {
-    name: '',
-    fatherName: '',
-    admissionNumber: '',
-    class: 'Class 1',
-    classId: '',
-    dateOfBirth: '',
-    phone: '',
-    admissionDate: ''
-  };
 
-  // Load existing student when editing
-  if (id) {
-    try {
-      const sDoc = await getDoc(doc(db, "students", id));
-
-      if (!sDoc.exists()) {
-        alert("Student record not found.");
-        return;
-      }
-
-      student = {
-        ...student,
-        ...sDoc.data()
-      };
-    } catch (error) {
-      console.error("Error loading student:", error);
-      alert("Unable to load student record.");
-      return;
-    }
-  }
-
-  const html = `
-    <form id="student-form">
-
-      <div class="form-group">
-        <label for="s-name">Student Name *</label>
-        <input
-          type="text"
-          id="s-name"
-          value="${escapeHtml(student.name)}"
-          required
-          placeholder="Enter student name"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="s-father">Father Name *</label>
-        <input
-          type="text"
-          id="s-father"
-          value="${escapeHtml(student.fatherName)}"
-          required
-          placeholder="Enter father name"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="s-adm">Admission Number *</label>
-        <input
-          type="text"
-          id="s-adm"
-          value="${escapeHtml(student.admissionNumber)}"
-          required
-          placeholder="e.g. 1024"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="s-class">Class *</label>
-        <select id="s-class" required>
-          ${['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5']
-            .map(c => `
-              <option value="${c}" ${student.class === c ? 'selected' : ''}>
-                ${c}
-              </option>
-            `)
-            .join('')}
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="s-class-id">Class ID</label>
-        <input
-          type="text"
-          id="s-class-id"
-          value="${escapeHtml(student.classId)}"
-          placeholder="Enter class ID"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="s-dob">Date of Birth</label>
-        <input
-          type="date"
-          id="s-dob"
-          value="${escapeHtml(student.dateOfBirth)}"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="s-phone">Phone Number</label>
-        <input
-          type="text"
-          id="s-phone"
-          value="${escapeHtml(student.phone)}"
-          placeholder="03XXXXXXXXX"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="s-admission-date">Admission Date</label>
-        <input
-          type="date"
-          id="s-admission-date"
-          value="${escapeHtml(student.admissionDate)}"
-        >
-      </div>
-
-      <button type="submit" class="btn btn-primary">
-        <i class="fa fa-save"></i>
-        ${id ? 'Update Student' : 'Save Student'}
-      </button>
-
-    </form>
-  `;
-
-  openModal(
-    id ? "Edit Student" : "Add Student",
-    html
-  );
-
-  const form = document.getElementById('student-form');
-
-  if (!form) {
-    console.error("Student form could not be created.");
-    return;
-  }
-
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-
-    const name = document.getElementById('s-name').value.trim();
-    const fatherName = document.getElementById('s-father').value.trim();
-    const admissionNumber = document.getElementById('s-adm').value.trim();
-    const studentClass = document.getElementById('s-class').value;
-    const classId = document.getElementById('s-class-id').value.trim();
-    const dateOfBirth = document.getElementById('s-dob').value;
-    const phone = document.getElementById('s-phone').value.trim();
-    const admissionDate = document.getElementById('s-admission-date').value;
-
-    // Basic validation
-    if (!name) {
-      alert("Please enter the student's name.");
-      return;
-    }
-
-    if (!fatherName) {
-      alert("Please enter the father's name.");
-      return;
-    }
-
-    if (!admissionNumber) {
-      alert("Please enter the admission number.");
-      return;
-    }
-
-    if (!studentClass) {
-      alert("Please select a class.");
-      return;
-    }
-
-    try {
-      // Check whether admission number already exists
-      const admissionQuery = query(
-        collection(db, "students"),
-        where("admissionNumber", "==", admissionNumber)
-      );
-
-      const existingStudents = await getDocs(admissionQuery);
-
-      let duplicateFound = false;
-
-      existingStudents.forEach(existingDoc => {
-        // Ignore the current student when editing
-        if (!id || existingDoc.id !== id) {
-          duplicateFound = true;
-        }
-      });
-
-      if (duplicateFound) {
-        alert(
-          `Admission number "${admissionNumber}" is already registered.\n\nPlease use a unique admission number.`
-        );
-        return;
-      }
-
-      const payload = {
-        name: name,
-        fatherName: fatherName,
-        admissionNumber: admissionNumber,
-        class: studentClass,
-        classId: classId,
-        dateOfBirth: dateOfBirth,
-        phone: phone,
-        admissionDate: admissionDate,
-        updatedAt: serverTimestamp()
-      };
-
-      if (id) {
-        // UPDATE existing student
-        await updateDoc(
-          doc(db, "students", id),
-          payload
-        );
-
-        alert("Student record updated successfully.");
-      } else {
-        // ADD new student
-        payload.createdAt = serverTimestamp();
-
-        await addDoc(
-          collection(db, "students"),
-          payload
-        );
-
-        alert("Student registered successfully.");
-      }
-
-      closeModal();
-
-      // Refresh student table
-      await loadStudents();
-
-      // Refresh dashboard if available
-      if (typeof loadDashboardData === 'function') {
-        loadDashboardData();
-      }
-
-    } catch (error) {
-      console.error("Error saving student:", error);
-
-      alert(
-        "Unable to save student record.\n\n" +
-        "Please check your internet connection and Firebase permissions."
-      );
-    }
-  };
- 
-};
 // =========================================================
 // STUDENT PROFILE VIEW
 // =========================================================
-
 window.viewStudentProfile = async function(id) {
   try {
     const studentRef = doc(db, "students", id);
@@ -1123,129 +753,36 @@ window.viewStudentProfile = async function(id) {
     }
 
     const student = studentSnap.data();
-
     const createdDate = student.createdAt?.toDate
       ? student.createdAt.toDate().toLocaleDateString('en-GB')
       : '-';
 
     const html = `
       <div class="student-profile">
-
         <div class="student-profile-header">
-          <div class="student-profile-avatar">
-            <i class="fa fa-user-graduate"></i>
-          </div>
-
+          <div class="student-profile-avatar"><i class="fa fa-user-graduate"></i></div>
           <div class="student-profile-title">
             <h2>${escapeHtml(student.name || '-')}</h2>
-            <p>
-              Admission No:
-              <strong>${escapeHtml(student.admissionNumber || '-')}</strong>
-            </p>
+            <p>Admission No: <strong>${escapeHtml(student.admissionNumber || '-')}</strong></p>
           </div>
         </div>
 
         <div class="student-profile-grid">
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-user"></i>
-              Student Name
-            </span>
-            <strong>${escapeHtml(student.name || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-user"></i>
-              Father Name
-            </span>
-            <strong>${escapeHtml(student.fatherName || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-id-card"></i>
-              Admission Number
-            </span>
-            <strong>${escapeHtml(student.admissionNumber || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-school"></i>
-              Class
-            </span>
-            <strong>${escapeHtml(student.class || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-hashtag"></i>
-              Class ID
-            </span>
-            <strong>${escapeHtml(student.classId || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-calendar"></i>
-              Date of Birth
-            </span>
-            <strong>${escapeHtml(student.dateOfBirth || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-phone"></i>
-              Phone Number
-            </span>
-            <strong>${escapeHtml(student.phone || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-calendar-plus"></i>
-              Admission Date
-            </span>
-            <strong>${escapeHtml(student.admissionDate || '-')}</strong>
-          </div>
-
-          <div class="profile-info-card">
-            <span class="profile-label">
-              <i class="fa fa-clock"></i>
-              Registered On
-            </span>
-            <strong>${createdDate}</strong>
-          </div>
-
+          <div class="profile-info-card"><span class="profile-label">Student Name</span><strong>${escapeHtml(student.name || '-')}</strong></div>
+          <div class="profile-info-card"><span class="profile-label">Father Name</span><strong>${escapeHtml(student.fatherName || '-')}</strong></div>
+          <div class="profile-info-card"><span class="profile-label">Admission Number</span><strong>${escapeHtml(student.admissionNumber || '-')}</strong></div>
+          <div class="profile-info-card"><span class="profile-label">Class</span><strong>${escapeHtml(student.class || '-')}</strong></div>
+          <div class="profile-info-card"><span class="profile-label">Phone</span><strong>${escapeHtml(student.phone || '-')}</strong></div>
         </div>
 
         <div class="student-profile-actions">
-
           ${
             (userRole === 'superadmin' || userRole === 'admin')
-              ? `
-<button
-  type="button"
-  class="btn btn-primary btn-sm"
-  onclick="window.openStudentModal('${Id}')"
-  title="Edit Student">
-  <i class="fa fa-edit"></i>
-</button>
-              `
+              ? `<button type="button" class="btn btn-primary btn-sm" onclick="window.closeModal(); setTimeout(() => window.openStudentModal('${id}'), 100)"><i class="fa fa-edit"></i> Edit Student</button>`
               : ''
           }
-
-          <button
-            class="btn btn-secondary"
-            onclick="window.viewStudentMarksheet('${id}')">
-            <i class="fa fa-file-invoice"></i>
-            View Result
-          </button>
-
+          <button class="btn btn-secondary" onclick="window.viewStudentMarksheet('${id}')"><i class="fa fa-file-invoice"></i> View Result</button>
         </div>
-
       </div>
     `;
 
@@ -1253,15 +790,12 @@ window.viewStudentProfile = async function(id) {
 
   } catch (error) {
     console.error("Error loading student profile:", error);
-
-    alert(
-      "Unable to load student profile.\n\n" +
-      (error.code || "Unknown error") +
-      "\n\n" +
-      (error.message || "Please check your internet connection.")
-    );
+    alert("Unable to load student profile.\n\n" + (error.message || "Unknown error"));
   }
 };
+
+
+
 /* ===================================================
    MODULE 3: TEACHER MANAGEMENT
    =================================================== */
