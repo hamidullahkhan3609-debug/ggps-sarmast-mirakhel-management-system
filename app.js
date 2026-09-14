@@ -311,12 +311,14 @@ function openModal(title, htmlContent) {
   if (mbc) mbc.innerHTML = htmlContent;
   if (mo) mo.style.display = 'flex';
 }
+window.openModal = openModal; // <-- ADD THIS LINE
 
 function closeModal() {
   const mo = document.getElementById('modal-overlay');
   if (mo) mo.style.display = 'none';
 }
 window.closeModal = closeModal;
+
 /* ===================================================
    MODULE 1: DASHBOARD
    =================================================== */
