@@ -666,7 +666,11 @@ async function loadStudents() {
   const tbody = document.getElementById('students-table-body');
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="7" class="loading-row">Loading students...</td></tr>`;
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="loading-row">Loading students...</td>
+    </tr>
+  `;
 
   try {
     let q = collection(db, "students");
@@ -720,7 +724,7 @@ async function loadStudents() {
           }
           ${
             userRole === 'superadmin'
-              ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('students', '${studentId}', loadStudents)"><i class="fa fa-trash"></i></button>`
+              ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('students', '${studentId}', loadStudents)" title="Delete Student"><i class="fa fa-trash"></i></button>`
               : ''
           }
         </td>
@@ -729,12 +733,27 @@ async function loadStudents() {
     });
 
     if (visibleStudents === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No students found</td></tr>`;
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty-row">
+            <div class="table-empty-state">
+              <i class="fa fa-user-graduate"></i>
+              <strong>No students found</strong>
+            </div>
+          </td>
+        </tr>
+      `;
     }
 
   } catch (error) {
     console.error("Error loading students:", error);
-    tbody.innerHTML = `<tr><td colspan="7" class="error-row">Unable to load student records.</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="error-row">
+          <i class="fa fa-exclamation-triangle"></i> Unable to load student records.
+        </td>
+      </tr>
+    `;
   }
 }
 
