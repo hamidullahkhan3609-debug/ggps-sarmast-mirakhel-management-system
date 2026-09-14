@@ -726,7 +726,7 @@ async function loadStudents() {
           }
           ${
             userRole === 'superadmin'
-              ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('students', '${studentId}', loadStudents)" title="Delete Student"><i class="fa fa-trash"></i></button>`
+              ? `<button class="btn btn-danger btn-sm" onclick="window.deleteRecord('students', '${studentId}', window.loadStudents)" title="Delete Student"><i class="fa fa-trash"></i></button>`
               : ''
           }
         </td>
@@ -758,7 +758,377 @@ async function loadStudents() {
     `;
   }
 }
+window.loadStudents = loadStudents;
+// ===================================================
+// STUDENT ADD / EDIT MODAL
+// ===================================================
+window.openStudentModal = async function(id = null) {
 
+  let student = {
+    name: '',
+    fatherName: '',
+    admissionNumber: '',
+    class: 'Class 1',
+    classId: '',
+    dateOfBirth: '',
+    phone: '',
+    admissionDate: ''
+  };
+
+  // -----------------------------------------------
+  // LOAD EXISTING STUDENT FOR EDITING
+  // -----------------------------------------------
+  if (id) {
+    try {
+
+      const studentRef = doc(db, "students", id);
+      const studentSnap = await getDoc(studentRef);
+
+      if (!studentSnap.exists()) {
+        alert("Student record not found.");
+        return;
+      }
+
+      student = {
+        ...student,
+        ...studentSnap.data()
+      };
+
+    } catch (error) {
+
+      console.error("Error loading student:", error);
+
+      alert(
+        "Unable to load student record.\n\n" +
+        (error.code || "Unknown error") +
+        "\n\n" +
+        (error.message || "")
+      );
+
+      return;
+    }
+  }
+
+  // -----------------------------------------------
+  // STUDENT FORM
+  // -----------------------------------------------
+  const html = `
+    <form id="student-form">
+
+      <div class="form-group">
+        <label for="s-name">Student Name *</label>
+        <input
+          type="text"
+          id="s-name"
+          value="${escapeHtml(student.name)}"
+          required
+          placeholder="Enter student name"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="s-father">Father Name *</label>
+        <input
+          type="text"
+          id="s-father"
+          value="${escapeHtml(student.fatherName)}"
+          required
+          placeholder="Enter father name"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="s-adm">Admission Number *</label>
+        <input
+          type="text"
+          id="s-adm"
+          value="${escapeHtml(student.admissionNumber)}"
+          required
+          placeholder="Enter admission number"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="s-class">Class *</label>
+        <select id="s-class" required>
+
+          ${['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5']
+            .map(c => `
+              <option
+                value="${c}"
+                ${student.class === c ? 'selected' : ''}
+              >
+                ${c}
+              </option>
+            `)
+            .join('')}
+
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="s-class-id">Class ID</label>
+        <input
+          type="text"
+          id="s-class-id"
+          value="${escapeHtml(student.classId)}"
+          placeholder="Enter class ID"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="s-dob">Date of Birth</label>
+        <input
+          type="date"
+          id="s-dob"
+          value="${escapeHtml(student.dateOfBirth)}"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="s-phone">Phone Number</label>
+        <input
+          type="tel"
+          id="s-phone"
+          value="${escapeHtml(student.phone)}"
+          placeholder="Enter phone number"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="s-admission-date">Admission Date</label>
+        <input
+          type="date"
+          id="s-admission-date"
+          value="${escapeHtml(student.admissionDate)}"
+        >
+      </div>
+
+      <div
+        style="
+          display:flex;
+          justify-content:flex-end;
+          gap:10px;
+          margin-top:20px;
+        "
+      >
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="window.closeModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          id="save-student-btn"
+        >
+          <i class="fa fa-save"></i>
+          ${id ? 'Update Student' : 'Save Student'}
+        </button>
+
+      </div>
+
+    </form>
+  `;
+
+  openModal(
+    id ? "Edit Student" : "Add Student",
+    html
+  );
+
+  // -----------------------------------------------
+  // FORM SUBMIT
+  // -----------------------------------------------
+  const form = document.getElementById('student-form');
+
+  if (!form) {
+    console.error("Student form was not created.");
+    return;
+  }
+
+  form.addEventListener('submit', async (e) => {
+
+    e.preventDefault();
+
+    const saveBtn = document.getElementById('save-student-btn');
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML =
+        '<i class="fa fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+
+      const name =
+        document.getElementById('s-name')?.value.trim() || '';
+
+      const fatherName =
+        document.getElementById('s-father')?.value.trim() || '';
+
+      const admissionNumber =
+        document.getElementById('s-adm')?.value.trim() || '';
+
+      const studentClass =
+        document.getElementById('s-class')?.value || 'Class 1';
+
+      const classId =
+        document.getElementById('s-class-id')?.value.trim() || '';
+
+      const dateOfBirth =
+        document.getElementById('s-dob')?.value || '';
+
+      const phone =
+        document.getElementById('s-phone')?.value.trim() || '';
+
+      const admissionDate =
+        document.getElementById('s-admission-date')?.value || '';
+
+      // -------------------------------------------
+      // VALIDATION
+      // -------------------------------------------
+      if (!name || !fatherName || !admissionNumber) {
+
+        alert(
+          "Please enter Student Name, Father Name, " +
+          "and Admission Number."
+        );
+
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML =
+            '<i class="fa fa-save"></i> ' +
+            (id ? 'Update Student' : 'Save Student');
+        }
+
+        return;
+      }
+
+      // -------------------------------------------
+      // CHECK DUPLICATE ADMISSION NUMBER
+      // -------------------------------------------
+      const duplicateQuery = query(
+        collection(db, "students"),
+        where("admissionNumber", "==", admissionNumber)
+      );
+
+      const duplicateSnap =
+        await getDocs(duplicateQuery);
+
+      let duplicateFound = false;
+
+      duplicateSnap.forEach(docSnap => {
+
+        // When editing, allow the current student's
+        // own admission number.
+        if (docSnap.id !== id) {
+          duplicateFound = true;
+        }
+
+      });
+
+      if (duplicateFound) {
+
+        alert(
+          "Another student already has admission number " +
+          admissionNumber + ".\n\n" +
+          "Please use a different admission number."
+        );
+
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML =
+            '<i class="fa fa-save"></i> ' +
+            (id ? 'Update Student' : 'Save Student');
+        }
+
+        return;
+      }
+
+      // -------------------------------------------
+      // DATA TO SAVE
+      // -------------------------------------------
+      const studentData = {
+        name: name,
+        fatherName: fatherName,
+        admissionNumber: admissionNumber,
+        class: studentClass,
+        classId: classId,
+        dateOfBirth: dateOfBirth,
+        phone: phone,
+        admissionDate: admissionDate,
+        updatedAt: serverTimestamp()
+      };
+
+      // -------------------------------------------
+      // UPDATE EXISTING STUDENT
+      // -------------------------------------------
+      if (id) {
+
+        await updateDoc(
+          doc(db, "students", id),
+          studentData
+        );
+
+        alert("Student information updated successfully.");
+
+      }
+
+      // -------------------------------------------
+      // ADD NEW STUDENT
+      // -------------------------------------------
+      else {
+
+        studentData.createdAt =
+          serverTimestamp();
+
+        await addDoc(
+          collection(db, "students"),
+          studentData
+        );
+
+        alert("Student registered successfully.");
+      }
+
+      // -------------------------------------------
+      // CLOSE MODAL + REFRESH TABLE
+      // -------------------------------------------
+      closeModal();
+
+      await loadStudents();
+
+    } catch (error) {
+
+      console.error(
+        "Error saving student:",
+        error
+      );
+
+      alert(
+        "Unable to save student.\n\n" +
+        (error.code || "Unknown error") +
+        "\n\n" +
+        (error.message || "")
+      );
+
+    } finally {
+
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML =
+          '<i class="fa fa-save"></i> ' +
+          (id ? 'Update Student' : 'Save Student');
+      }
+
+    }
+
+  });
+
+};
 
 // =========================================================
 // STUDENT PROFILE VIEW
