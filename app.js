@@ -170,10 +170,18 @@ function setupEventListeners() {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (authError) authError.style.display = 'none';
-      
-      const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
+
+      const emailInput = document.getElementById('login-email');
+      const passwordInput = document.getElementById('login-password');
       const btn = document.getElementById('login-btn');
+
+      if (!emailInput || !passwordInput) {
+        showAuthError("Error: Login input elements not found in HTML.");
+        return;
+      }
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
 
       try {
         if (btn) {
@@ -190,19 +198,20 @@ function setupEventListeners() {
       } catch (err) {
         console.error("SIGN IN ERROR:", err);
 
-        if (btn) {
-          btn.disabled = false;
-          btn.innerText = "Sign In";
-        }
-
         if (authStatus) {
           authStatus.innerText = "Firebase connected. Ready.";
         }
 
         showAuthError("Authentication failed: " + (err.message || err.code));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "Sign In";
+        }
       }
     });
   }
+
 
 
 
