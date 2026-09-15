@@ -88,21 +88,21 @@ function startApp() {
       initializeUI();
 
     } catch (err) {
-
-      console.error("LOGIN PROFILE ERROR:", err);
+      console.error("LOGIN PROFILE ERROR:", err);[span_4](start_span)[span_4](end_span)
 
       showAuthError(
         "Login succeeded, but the school profile could not be loaded.\n\n" +
-        (err.code || "Unknown error") +
-        "\n\n" +
-        (err.message || "Unknown Firebase error")
-      );
+        (err.code || "Unknown error") + "\n\n" + (err.message || "")
+      );[span_5](start_span)[span_5](end_span)
 
       if (authStatus) {
-        authStatus.innerText = "Unable to load school account.";
+        authStatus.innerText = "Unable to load school account.";[span_6](start_span)[span_6](end_span)
       }
+
+      // Force sign out so the user isn't left stuck in limbo
+      await signOut(auth);[span_7](start_span)[span_7](end_span)
     }
-  });
+
 }
 
 // Start immediately because app.js is loaded at the bottom of index.html
