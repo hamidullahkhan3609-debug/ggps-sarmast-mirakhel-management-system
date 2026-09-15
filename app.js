@@ -3871,156 +3871,734 @@ window.loadExams = loadExams;
    MODULE 6 & 7: MARKS ENTRY & AUTOMATIC RESULTS
    =================================================== */
 async function loadMarksExamsDropdown() {
-  const cls = document.getElementById('marks-filter-class')?.value;
-  const examSelect = document.getElementById('marks-filter-exam');
+
+  const cls =
+    document.getElementById('marks-filter-class')?.value;
+
+  const examSelect =
+    document.getElementById('marks-filter-exam');
+
   if (!examSelect) return;
-  examSelect.innerHTML = '<option value="">Select Exam</option>';
 
-  const snap = await getDocs(collection(db, "exams"));
-  snap.forEach(e => {
-    const data = e.data();
-    if (!cls || data.class === cls) {
-      examSelect.innerHTML += `<option value="${e.id}">${data.name} - ${data.class}</option>`;
-    }
-  });
-}
+  examSelect.innerHTML =
+    '<option value="">Select Exam</option>';
 
-function calculateGradeAndResult(obtained, max, passing) {
-  const percentage = (obtained / max) * 100;
-  let grade = 'F';
-  if (percentage >= 80) grade = 'A+';
-  else if (percentage >= 70) grade = 'A';
-  else if (percentage >= 60) grade = 'B';
-  else if (percentage >= 50) grade = 'C';
-  else if (percentage >= 40) grade = 'D';
+  try {
 
-  const status = (obtained >= passing && percentage >= 40) ? 'Pass' : 'Fail';
-  return { percentage: percentage.toFixed(1), grade, status };
-}
+    const snap =
+      await getDocs(collection(db, "exams"));
 
-async function loadMarks() {
-  const tbody = document.getElementById('marks-table-body');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="10">Loading marks...</td></tr>`;
+    const examGroups = {};
 
-  const selectedExamId = document.getElementById('marks-filter-exam')?.value;
-  const selectedClass = document.getElementById('marks-filter-class')?.value;
+    snap.forEach(docSnap => {
 
-  let q = collection(db, "marks");
-  const marksSnap = await getDocs(q);
-  const studentsSnap = await getDocs(collection(db, "students"));
-  const examsSnap = await getDocs(collection(db, "exams"));
-  const subjectsSnap = await getDocs(collection(db, "subjects"));
+      const data = docSnap.data();
 
-  const studentMap = {};
-  studentsSnap.forEach(s => studentMap[s.id] = s.data());
-  const examMap = {};
-  examsSnap.forEach(e => examMap[e.id] = { id: e.id, ...e.data() });
-  const subjectMap = {};
-  subjectsSnap.forEach(sub => subjectMap[sub.id] = sub.data().name);
+      if (cls && data.class !== cls) {
+        return;
+      }
 
-  tbody.innerHTML = '';
-  marksSnap.forEach(mDoc => {
-    const data = mDoc.data();
-    data.id = mDoc.id;
+      /*
+       * New whole-class exams use examGroupId.
+       * Group them so one complete exam appears
+       * only once in the dropdown.
+       */
+      const groupId =
+        data.examGroupId || docSnap.id;
 
-    const student = studentMap[data.studentId];
-    const exam = examMap[data.examId];
+      if (!examGroups[groupId]) {
 
-    if (!student || !exam) return;
-    if (selectedClass && student.class !== selectedClass) return;
-    if (selectedExamId && data.examId !== selectedExamId) return;
+        examGroups[groupId] = {
+          id: groupId,
+          name: data.name || 'Unnamed Exam',
+          type: data.type || '',
+          class: data.class || '',
+          subjects: []
+        };
 
-    if (userRole === 'student' && student.userId !== currentUser.uid) return;
+      }
 
-    const evalResult = calculateGradeAndResult(data.obtainedMarks, exam.maxMarks, exam.passingMarks);
+      examGroups[groupId].subjects.push({
+        id: docSnap.id,
+        subjectId: data.subjectId || '',
+        date: data.date || ''
+      });
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${student.name}</td>
-      <td>${student.admissionNumber}</td>
-      <td>${student.class}</td>
-      <td>${exam.name}</td>
-      <td>${subjectMap[exam.subjectId] || 'N/A'}</td>
-      <td>${data.obtainedMarks} / ${exam.maxMarks}</td>
-      <td>${evalResult.percentage}%</td>
-      <td><strong>${evalResult.grade}</strong></td>
-      <td><span class="badge ${evalResult.status === 'Pass' ? 'green' : 'red'}">${evalResult.status}</span></td>
-      <td>
-        ${(userRole === 'superadmin' || userRole === 'admin' || userRole === 'teacher') ? `<button class="btn btn-primary btn-sm" onclick="openMarksModal('${data.id}')"><i class="fa fa-edit"></i></button>` : ''}
-        ${(userRole === 'superadmin') ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('marks', '${data.id}', loadMarks)"><i class="fa fa-trash"></i></button>` : ''}
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+    });
 
-  if (!tbody.hasChildNodes()) {
-    tbody.innerHTML = `<tr><td colspan="10">No mark records found.</td></tr>`;
+
+    Object.values(examGroups).forEach(exam => {
+
+      const subjectCount =
+        exam.subjects.length;
+
+      const label =
+        `${exam.name} - ${exam.class} (${subjectCount} subjects)`;
+
+      /*
+       * For grouped exams, use the group ID.
+       * For old legacy exams, the document ID
+       * remains the value.
+       */
+      examSelect.innerHTML += `
+        <option value="${exam.id}">
+          ${label}
+        </option>
+      `;
+
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "Error loading marks exam dropdown:",
+      error
+    );
+
+    examSelect.innerHTML =
+      '<option value="">Unable to load exams</option>';
+
   }
+
 }
 
 window.openMarksModal = async function(id = null) {
-  let mark = { studentId: '', examId: '', obtainedMarks: '' };
+
+  let mark = {
+    studentId: '',
+    examId: '',
+    obtainedMarks: ''
+  };
+
   if (id) {
-    const mDoc = await getDoc(doc(db, "marks", id));
-    if (mDoc.exists()) mark = mDoc.data();
+
+    const mDoc =
+      await getDoc(doc(db, "marks", id));
+
+    if (mDoc.exists()) {
+      mark = mDoc.data();
+    }
+
   }
 
-  const studentsSnap = await getDocs(collection(db, "students"));
+
+  /* =========================================
+     LOAD STUDENTS
+     ========================================= */
+
+  const studentsSnap =
+    await getDocs(collection(db, "students"));
+
   let studentOpts = '';
+
   studentsSnap.forEach(s => {
+
     const sData = s.data();
-    studentOpts += `<option value="${s.id}" ${mark.studentId === s.id ? 'selected' : ''}>${sData.name} (${sData.class} - Adm: ${sData.admissionNumber})</option>`;
+
+    studentOpts += `
+      <option
+        value="${s.id}"
+        ${mark.studentId === s.id ? 'selected' : ''}
+      >
+        ${sData.name}
+        (${sData.class} - Adm: ${sData.admissionNumber})
+      </option>
+    `;
+
   });
 
-  const examsSnap = await getDocs(collection(db, "exams"));
-  let examOpts = '';
+
+  /* =========================================
+     LOAD EXAMS
+     ========================================= */
+
+  const examsSnap =
+    await getDocs(collection(db, "exams"));
+
+  const examGroups = {};
+
+  let selectedExamGroupId = '';
+
+
   examsSnap.forEach(e => {
+
     const eData = e.data();
-    examOpts += `<option value="${e.id}" ${mark.examId === e.id ? 'selected' : ''}>${eData.name} - ${eData.class} (Max: ${eData.maxMarks})</option>`;
+
+    const groupId =
+      eData.examGroupId || e.id;
+
+
+    if (!examGroups[groupId]) {
+
+      examGroups[groupId] = {
+        id: groupId,
+        name: eData.name || 'Unnamed Exam',
+        type: eData.type || '',
+        class: eData.class || '',
+        subjects: []
+      };
+
+    }
+
+
+    examGroups[groupId].subjects.push({
+
+      id: e.id,
+
+      subjectId:
+        eData.subjectId || '',
+
+      subjectName:
+        eData.subjectName || '',
+
+      date:
+        eData.date || '',
+
+      maxMarks:
+        eData.maxMarks ?? 0,
+
+      passingMarks:
+        eData.passingMarks ?? 0
+
+    });
+
+
+    /*
+     * When editing an existing mark,
+     * find the group containing its exam document.
+     */
+
+    if (mark.examId === e.id) {
+
+      selectedExamGroupId = groupId;
+
+    }
+
   });
+
+
+  /* =========================================
+     BUILD EXAM OPTIONS
+     ========================================= */
+
+  let examOpts =
+    '<option value="">Select Exam</option>';
+
+
+  Object.values(examGroups).forEach(exam => {
+
+    const subjectCount =
+      exam.subjects.length;
+
+
+    examOpts += `
+      <option
+        value="${exam.id}"
+        ${selectedExamGroupId === exam.id ? 'selected' : ''}
+      >
+        ${exam.name} - ${exam.class}
+        (${subjectCount} subjects)
+      </option>
+    `;
+
+  });
+
+
+  /* =========================================
+     INITIAL SUBJECT OPTIONS
+     ========================================= */
+
+  let subjectOpts =
+    '<option value="">Select Subject</option>';
+
+
+  if (selectedExamGroupId &&
+      examGroups[selectedExamGroupId]) {
+
+    examGroups[selectedExamGroupId].subjects
+      .forEach(subject => {
+
+        subjectOpts += `
+          <option
+            value="${subject.id}"
+            ${mark.examId === subject.id ? 'selected' : ''}
+          >
+            ${subject.subjectName || subject.subjectId}
+            (Max: ${subject.maxMarks})
+          </option>
+        `;
+
+      });
+
+  }
+
+
+  /* =========================================
+     FORM
+     ========================================= */
 
   const html = `
+
     <form id="marks-form">
-      <div class="form-group"><label for="m-student">Select Student *</label><select id="m-student" required>${studentOpts}</select></div>
-      <div class="form-group"><label for="m-exam">Select Exam *</label><select id="m-exam" required>${examOpts}</select></div>
-      <div class="form-group"><label for="m-obtained">Obtained Marks *</label><input type="number" id="m-obtained" value="${mark.obtainedMarks}" min="0" required></div>
-      <button type="submit" class="btn btn-primary">${id ? 'Update' : 'Save'} Marks</button>
+
+
+      <div class="form-group">
+
+        <label for="m-student">
+          Select Student *
+        </label>
+
+        <select id="m-student" required>
+
+          <option value="">
+            Select Student
+          </option>
+
+          ${studentOpts}
+
+        </select>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="m-exam">
+          Select Exam *
+        </label>
+
+        <select id="m-exam" required>
+
+          ${examOpts}
+
+        </select>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="m-subject">
+          Select Subject *
+        </label>
+
+        <select id="m-subject" required>
+
+          ${subjectOpts}
+
+        </select>
+
+      </div>
+
+
+      <div
+        id="marks-limit-info"
+        style="
+          margin-top: -5px;
+          margin-bottom: 12px;
+          padding: 9px 12px;
+          background: #f8f6fb;
+          border: 1px solid #e5dfeb;
+          border-radius: 7px;
+          color: #665d70;
+          font-size: 13px;
+          display: none;
+        "
+      >
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="m-obtained">
+          Obtained Marks *
+        </label>
+
+        <input
+          type="number"
+          id="m-obtained"
+          value="${mark.obtainedMarks ?? ''}"
+          min="0"
+          required
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        class="btn btn-primary"
+      >
+        ${id ? 'Update' : 'Save'} Marks
+      </button>
+
+
     </form>
+
   `;
-  openModal(id ? "Edit Marks" : "Enter Marks", html);
 
-  document.getElementById('marks-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const examId = document.getElementById('m-exam').value;
-    const obtainedMarks = Number(document.getElementById('m-obtained').value);
 
-    const examDoc = await getDoc(doc(db, "exams", examId));
-    if (!examDoc.exists()) return;
-    const examData = examDoc.data();
+  openModal(
+    id ? "Edit Marks" : "Enter Marks",
+    html
+  );
 
-    if (obtainedMarks > examData.maxMarks) {
-      alert(`Obtained marks (${obtainedMarks}) cannot exceed Maximum Marks (${examData.maxMarks}) for this exam.`);
+
+  /* =========================================
+     GET FORM ELEMENTS
+     ========================================= */
+
+  const examSelect =
+    document.getElementById('m-exam');
+
+  const subjectSelect =
+    document.getElementById('m-subject');
+
+  const obtainedInput =
+    document.getElementById('m-obtained');
+
+  const limitInfo =
+    document.getElementById('marks-limit-info');
+
+
+  /* =========================================
+     LOAD SUBJECTS FOR SELECTED EXAM
+     ========================================= */
+
+  function updateSubjects() {
+
+    const groupId =
+      examSelect.value;
+
+    subjectSelect.innerHTML =
+      '<option value="">Select Subject</option>';
+
+
+    if (!groupId ||
+        !examGroups[groupId]) {
+
+      limitInfo.style.display = 'none';
+
       return;
+
     }
+
+
+    const exam =
+      examGroups[groupId];
+
+
+    exam.subjects.forEach(subject => {
+
+      const option =
+        document.createElement('option');
+
+      option.value =
+        subject.id;
+
+      option.textContent =
+        `${subject.subjectName || subject.subjectId} (Max: ${subject.maxMarks})`;
+
+      /*
+       * When editing, restore the existing
+       * subject/exam document.
+       */
+
+      if (mark.examId === subject.id) {
+        option.selected = true;
+      }
+
+      subjectSelect.appendChild(option);
+
+    });
+
+
+    updateMarksLimit();
+
+  }
+
+
+  /* =========================================
+     UPDATE MAX/PASSING INFORMATION
+     ========================================= */
+
+  function updateMarksLimit() {
+
+    const subjectId =
+      subjectSelect.value;
+
+    if (!subjectId) {
+
+      limitInfo.style.display = 'none';
+
+      return;
+
+    }
+
+
+    const groupId =
+      examSelect.value;
+
+    const exam =
+      examGroups[groupId];
+
+
+    if (!exam) return;
+
+
+    const subject =
+      exam.subjects.find(
+        s => s.id === subjectId
+      );
+
+
+    if (!subject) {
+
+      limitInfo.style.display = 'none';
+
+      return;
+
+    }
+
+
+    limitInfo.innerHTML = `
+      Maximum Marks:
+      <strong>${subject.maxMarks}</strong>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      Passing Marks:
+      <strong>${subject.passingMarks}</strong>
+    `;
+
+    limitInfo.style.display = 'block';
+
+
+    obtainedInput.max =
+      subject.maxMarks;
+
+  }
+
+
+  /* =========================================
+     EXAM CHANGE
+     ========================================= */
+
+  examSelect.addEventListener(
+    'change',
+    function() {
+
+      updateSubjects();
+
+    }
+  );
+
+
+  /* =========================================
+     SUBJECT CHANGE
+     ========================================= */
+
+  subjectSelect.addEventListener(
+    'change',
+    function() {
+
+      updateMarksLimit();
+
+    }
+  );
+
+
+  /*
+   * Make sure the correct subjects appear
+   * when editing or when an exam is already
+   * selected.
+   */
+
+  if (examSelect.value) {
+    updateSubjects();
+  }
+
+
+  /* =========================================
+     SAVE / UPDATE MARKS
+     ========================================= */
+
+  document.getElementById(
+    'marks-form'
+  ).onsubmit = async (e) => {
+
+    e.preventDefault();
+
+
+    const studentId =
+      document.getElementById(
+        'm-student'
+      ).value;
+
+
+    const subjectExamId =
+      document.getElementById(
+        'm-subject'
+      ).value;
+
+
+    const obtainedMarks =
+      Number(
+        document.getElementById(
+          'm-obtained'
+        ).value
+      );
+
+
+    if (!studentId) {
+
+      alert(
+        "Please select a student."
+      );
+
+      return;
+
+    }
+
+
+    if (!subjectExamId) {
+
+      alert(
+        "Please select a subject."
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * The subject dropdown contains the actual
+     * exam document ID. Marks continue to point
+     * directly to that document.
+     */
+
+    const examDoc =
+      await getDoc(
+        doc(
+          db,
+          "exams",
+          subjectExamId
+        )
+      );
+
+
+    if (!examDoc.exists()) {
+
+      alert(
+        "Selected subject exam was not found."
+      );
+
+      return;
+
+    }
+
+
+    const examData =
+      examDoc.data();
+
+
+    const maxMarks =
+      Number(
+        examData.maxMarks || 0
+      );
+
+
+    const passingMarks =
+      Number(
+        examData.passingMarks || 0
+      );
+
+
+    if (obtainedMarks < 0) {
+
+      alert(
+        "Obtained marks cannot be negative."
+      );
+
+      return;
+
+    }
+
+
+    if (obtainedMarks > maxMarks) {
+
+      alert(
+        `Obtained marks (${obtainedMarks}) cannot exceed Maximum Marks (${maxMarks}).`
+      );
+
+      return;
+
+    }
+
 
     const payload = {
-      studentId: document.getElementById('m-student').value,
-      examId: examId,
-      obtainedMarks: obtainedMarks,
-      enteredBy: currentUser.email,
-      updatedAt: serverTimestamp()
+
+      studentId:
+        studentId,
+
+      examId:
+        subjectExamId,
+
+      obtainedMarks:
+        obtainedMarks,
+
+      enteredBy:
+        currentUser.email,
+
+      updatedAt:
+        serverTimestamp()
+
     };
 
-    if (id) {
-      await updateDoc(doc(db, "marks", id), payload);
-    } else {
-      payload.createdAt = serverTimestamp();
-      await addDoc(collection(db, "marks"), payload);
+
+    try {
+
+      if (id) {
+
+        await updateDoc(
+          doc(db, "marks", id),
+          payload
+        );
+
+      } else {
+
+        payload.createdAt =
+          serverTimestamp();
+
+        await addDoc(
+          collection(db, "marks"),
+          payload
+        );
+
+      }
+
+
+      closeModal();
+
+      loadMarks();
+
+
+    } catch (error) {
+
+      console.error(
+        "Error saving marks:",
+        error
+      );
+
+      alert(
+        "Error saving marks: " +
+        error.message
+      );
+
     }
-    closeModal();
-    loadMarks();
+
   };
+
 };
 
 window.viewStudentMarksheet = async function(studentId) {
