@@ -3042,17 +3042,11 @@ window.printExamTimetable = function() {
 
           border-radius: 12px;
 
-          background:
-            linear-gradient(
-              135deg,
-              #4c1d95 0%,
-              #6d28d9 48%,
-              #2563eb 100%
-            );
+background: #f3eff9;
 
-          color: #ffffff;
+color: #4b4358;
 
-          border-bottom: 6px solid #facc15;
+border-bottom: 4px solid #d8c98b;
 
         }
 
@@ -3071,7 +3065,7 @@ window.printExamTimetable = function() {
 
           height: 3px;
 
-          background: #facc15;
+          background: #d8c98b;
 
           border-radius: 10px;
 
@@ -3129,11 +3123,11 @@ window.printExamTimetable = function() {
 
           padding: 10px 15px;
 
-          border: 2px solid #ddd6fe;
+          border: 1px solid #e4ddea;
 
           border-radius: 10px;
 
-          background: #faf7ff;
+          background: #d8c98b;
 
         }
 
@@ -3146,7 +3140,7 @@ window.printExamTimetable = function() {
 
           font-weight: 800;
 
-          color: #4c1d95;
+          color: #62556f;
 
           text-transform: uppercase;
 
@@ -3210,17 +3204,12 @@ window.printExamTimetable = function() {
 
           border-right: 1px solid #ffffff;
 
-          border-bottom: 2px solid #facc15;
+          border-bottom: 2px solid #d8c98b;
 
-          background:
-            linear-gradient(
-              135deg,
-              #5b21b6,
-              #2563eb
-            );
+          background: #e8e1ef;
 
-          color: #ffffff;
-
+          color: #51475b;
+ 
           font-size: 10px;
 
           font-weight: 800;
@@ -3261,17 +3250,20 @@ window.printExamTimetable = function() {
 
         }
 
+         tbody tr:nth-child(even) td {
 
-        tbody tr:nth-child(even) td {
+         background: #faf8fc;
 
-          background: #f5f3ff;
+}
 
         }
 
 
         tbody tr:nth-child(odd) td {
 
-          background: #fffbeb;
+        background: #fffdf7;
+
+}
 
         }
 
@@ -3379,19 +3371,15 @@ window.printExamTimetable = function() {
 
           padding: 10px 12px;
 
-          border-left: 5px solid #facc15;
+border-left: 4px solid #d8c98b;
 
-          border-top: 1px solid #fde68a;
+border-top: 1px solid #ebe4cf;
+border-right: 1px solid #ebe4cf;
+border-bottom: 1px solid #ebe4cf;
 
-          border-right: 1px solid #fde68a;
+background: #fffdf7;
 
-          border-bottom: 1px solid #fde68a;
-
-          border-radius: 6px;
-
-          background: #fffbeb;
-
-          color: #713f12;
+color: #6f6658;
 
           font-size: 10.5px;
 
@@ -3402,7 +3390,7 @@ window.printExamTimetable = function() {
 
         .note strong {
 
-          color: #92400e;
+          color: #766b58;
 
         }
 
