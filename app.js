@@ -170,7 +170,7 @@ function setupEventListeners() {
       e.preventDefault();
       if (authError) authError.style.display = 'none';
       
-      const email = document.getElementById('login-email').value;
+      const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
       const btn = document.getElementById('login-btn');
 
@@ -184,45 +184,25 @@ function setupEventListeners() {
           authStatus.innerText = "Signing in to school system...";
         }
 
-        await signInWithEmailAndPassword(
-          auth,
-          email.trim(),
-          password
-        );
+        await signInWithEmailAndPassword(auth, email, password);
 
       } catch (err) {
         console.error("SIGN IN ERROR:", err);
 
-        showAuthError(
-          "Authentication failed: " + (err.message || err.code || "Check email/password")
-        );
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "Sign In";
+        }
 
         if (authStatus) {
           authStatus.innerText = "Firebase connected. Ready.";
         }
 
-        if (btn) {
-          btn.disabled = false;
-          btn.innerText = "Sign In";
-        }
-      }
-
-        console.error("SIGN IN ERROR:", err);
-
-        showAuthError(
-          "Authentication failed.\n\n" +
-          (err.code || "Unknown error") +
-          "\n\n" +
-          (err.message || err)
-        );
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerText = "Sign In";
-        }
+        showAuthError("Authentication failed: " + (err.message || err.code));
       }
     });
   }
+
 
 
   document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
