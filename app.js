@@ -111,13 +111,14 @@ function startApp() {
       }
 
       // Force sign out so the user isn't left stuck in limbo
-      await signOut(auth);[span_7](start_span)[span_7](end_span)
+      await signOut(auth);
     }
-
+  });
 }
 
 // Start immediately because app.js is loaded at the bottom of index.html
 startApp();
+
 
 function showAuthError(msg) {
   if (authError) {
