@@ -57,13 +57,24 @@ function startApp() {
 
       if (!userDoc.exists()) {
         showAuthError(
-          "Login successful, but no user profile was found. " +
-          "Please contact the Super Admin."
+          "Login successful, but no Firestore profile was found for UID: " + user.uid + 
+          ". Please create a document in 'users' collection with this ID."
         );
+
+        const btn = document.getElementById('login-btn');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "Sign In";
+        }
+
+        if (authStatus) {
+          authStatus.innerText = "No school profile found.";
+        }
 
         await signOut(auth);
         return;
       }
+
 
       currentUser = {
         uid: user.uid,
@@ -173,15 +184,29 @@ function setupEventListeners() {
           authStatus.innerText = "Signing in to school system...";
         }
 
-        const result = await signInWithEmailAndPassword(
+        await signInWithEmailAndPassword(
           auth,
-          email,
+          email.trim(),
           password
         );
 
-        console.log("AUTHENTICATION SUCCESS:", result.user.uid);
-
       } catch (err) {
+        console.error("SIGN IN ERROR:", err);
+
+        showAuthError(
+          "Authentication failed: " + (err.message || err.code || "Check email/password")
+        );
+
+        if (authStatus) {
+          authStatus.innerText = "Firebase connected. Ready.";
+        }
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "Sign In";
+        }
+      }
+
         console.error("SIGN IN ERROR:", err);
 
         showAuthError(
