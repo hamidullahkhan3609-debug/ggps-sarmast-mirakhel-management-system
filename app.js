@@ -2904,589 +2904,882 @@ window.viewExamTimetable = async function(groupId) {
     /* =================================================
        PRINT FUNCTION FOR THIS TIMETABLE
        ================================================= */
+                
+window.printExamTimetable = function() {
 
-    window.printExamTimetable = function() {
+  const printWindow = window.open(
+    '',
+    '_blank',
+    'width=1000,height=800'
+  );
 
-      const printWindow =
-        window.open(
-          '',
-          '_blank',
-          'width=1000,height=800'
-        );
+  if (!printWindow) {
+    alert(
+      "Please allow pop-ups in your browser to print the timetable."
+    );
+    return;
+  }
 
+  printWindow.document.write(`
+    <!DOCTYPE html>
 
-      if (!printWindow) {
+    <html>
 
-        alert(
-          "Please allow pop-ups in your browser to print the timetable."
-        );
+    <head>
 
-        return;
+      <meta charset="UTF-8">
 
-      }
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+      >
 
+      <title>
+        ${escapeHtml(examName)} - ${escapeHtml(className)}
+      </title>
 
-      printWindow.document.write(`
 
-        <!DOCTYPE html>
+      <style>
 
-        <html>
+        /* =========================================
+           PAGE
+           ========================================= */
 
-        <head>
+        @page {
+          size: A4 portrait;
+          margin: 10mm;
+        }
 
-          <title>
-            ${escapeHtml(examName)}
-            - ${escapeHtml(className)}
-          </title>
 
+        * {
+          box-sizing: border-box;
+        }
 
-          <style>
 
-            @page {
-              size: A4 portrait;
-              margin: 12mm;
-            }
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+        }
 
 
-            * {
-              box-sizing: border-box;
-            }
+        body {
 
+          font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
 
-            html,
-            body {
-              margin: 0;
-              padding: 0;
-            }
+          color: #25213a;
 
+          background: #ffffff;
 
-            body {
+          position: relative;
 
-              font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
+          -webkit-print-color-adjust: exact;
 
-              color: #202124;
+          print-color-adjust: exact;
 
-              background: #ffffff;
+        }
 
-              position: relative;
 
-            }
+        /* =========================================
+           WATERMARK
+           ========================================= */
 
+        body::before {
 
-            /* =========================================
-               WATERMARK
-               ========================================= */
+          content:
+            "GOVERNMENT GIRLS PRIMARY SCHOOL\\A"
+            "SARMAST MIRA KHEL BANNU";
 
-            body::before {
+          white-space: pre;
 
-              content:
-                "GOVT. GIRLS PRIMARY SCHOOL\\A"
-                "SARMAST MIRA KHEL BANNU";
+          position: fixed;
 
-              white-space: pre;
+          top: 50%;
 
-              position: fixed;
+          left: 50%;
 
-              top: 50%;
+          transform:
+            translate(-50%, -50%)
+            rotate(-35deg);
 
-              left: 50%;
+          font-size: 42px;
 
-              transform:
-                translate(-50%, -50%)
-                rotate(-35deg);
+          font-weight: 800;
 
-              font-size: 48px;
+          line-height: 1.45;
 
-              font-weight: 700;
+          text-align: center;
 
-              line-height: 1.4;
+          letter-spacing: 2px;
 
-              text-align: center;
+          color: #6d28d9;
 
-              letter-spacing: 2px;
+          opacity: 0.045;
 
-              opacity: 0.045;
+          z-index: -1;
 
-              z-index: -1;
+          width: 100%;
 
-              width: 100%;
+          pointer-events: none;
 
-            }
+        }
 
 
-            /* =========================================
-               SCHOOL HEADER
-               ========================================= */
+        /* =========================================
+           SCHOOL HEADER
+           ========================================= */
 
-            .school-header {
+        .school-header {
 
-              text-align: center;
+          position: relative;
 
-              padding-bottom: 14px;
+          text-align: center;
 
-              border-bottom:
-                3px solid #333;
+          padding: 17px 18px 15px;
 
-              position: relative;
+          border-radius: 12px;
 
-            }
+          background:
+            linear-gradient(
+              135deg,
+              #4c1d95 0%,
+              #6d28d9 48%,
+              #2563eb 100%
+            );
 
+          color: #ffffff;
 
-            .school-header h1 {
+          border-bottom: 6px solid #facc15;
 
-              margin: 0;
+        }
 
-              font-size: 24px;
 
-              font-weight: 800;
+        .school-header::after {
 
-              letter-spacing: 0.4px;
+          content: "";
 
-            }
+          position: absolute;
 
+          left: 8%;
 
-            .school-header h2 {
+          right: 8%;
 
-              margin:
-                4px 0 5px;
+          bottom: -10px;
 
-              font-size: 19px;
+          height: 3px;
 
-              font-weight: 700;
+          background: #facc15;
 
-            }
+          border-radius: 10px;
 
+        }
 
-            .school-motto {
 
-              font-size: 12px;
+        .school-header h1 {
 
-              font-style: italic;
+          margin: 0;
 
-              margin-top: 5px;
+          font-size: 24px;
 
-            }
+          font-weight: 800;
 
+          letter-spacing: 0.4px;
 
-            /* =========================================
-               DOCUMENT TITLE
-               ========================================= */
+          text-transform: uppercase;
 
-            .document-title {
+        }
 
-              text-align: center;
 
-              margin:
-                18px 0 15px;
+        .school-header h2 {
 
-            }
+          margin: 5px 0 5px;
 
+          font-size: 19px;
 
-            .document-title h2 {
+          font-weight: 700;
 
-              margin: 0;
+        }
 
-              font-size: 21px;
 
-              text-transform: uppercase;
+        .school-motto {
 
-              letter-spacing: 0.8px;
+          font-size: 11px;
 
-            }
+          font-style: italic;
 
+          opacity: 0.95;
 
-            .exam-info {
+          margin-top: 6px;
 
-              margin-top: 8px;
+        }
 
-              display: flex;
 
-              justify-content: center;
+        /* =========================================
+           EXAM TITLE
+           ========================================= */
 
-              gap: 45px;
+        .document-title {
 
-              font-size: 13px;
+          text-align: center;
 
-            }
+          margin: 20px 0 15px;
 
+          padding: 10px 15px;
 
-            /* =========================================
-               TABLE
-               ========================================= */
+          border: 2px solid #ddd6fe;
 
-            table {
+          border-radius: 10px;
 
-              width: 100%;
+          background: #faf7ff;
 
-              border-collapse: collapse;
+        }
 
-              margin-top: 12px;
 
-            }
+        .document-title h2 {
 
+          margin: 0;
 
-            th {
+          font-size: 20px;
 
-              padding: 9px 6px;
+          font-weight: 800;
 
-              border:
-                1px solid #222;
+          color: #4c1d95;
 
-              font-size: 11px;
+          text-transform: uppercase;
 
-              font-weight: 700;
+          letter-spacing: 0.7px;
 
-              text-align: center;
+        }
 
-            }
 
+        .exam-info {
 
-            td {
+          display: flex;
 
-              padding: 9px 6px;
+          justify-content: center;
 
-              border:
-                1px solid #333;
+          align-items: center;
 
-              font-size: 11px;
+          gap: 45px;
 
-              text-align: center;
+          margin-top: 9px;
 
-              height: 35px;
+          font-size: 12px;
 
-            }
+          color: #374151;
 
+        }
 
-            td.subject {
 
-              text-align: left;
+        .exam-info strong {
 
-              font-weight: 600;
+          color: #5b21b6;
 
-            }
+        }
 
 
-            .serial {
+        /* =========================================
+           TABLE
+           ========================================= */
 
-              width: 35px;
+        table {
 
-            }
+          width: 100%;
 
+          border-collapse: separate;
 
-            /* =========================================
-               NOTE
-               ========================================= */
+          border-spacing: 0;
 
-            .note {
+          margin-top: 14px;
 
-              margin-top: 15px;
+          overflow: hidden;
 
-              padding: 9px 11px;
+          border: 1px solid #c4b5fd;
 
-              border:
-                1px solid #aaa;
+          border-radius: 8px;
 
-              font-size: 11px;
+        }
 
-            }
 
+        thead th {
 
-            /* =========================================
-               SIGNATURES
-               ========================================= */
+          padding: 9px 5px;
 
-            .signatures {
+          border-right: 1px solid #ffffff;
 
-              display: flex;
+          border-bottom: 2px solid #facc15;
 
-              justify-content: space-between;
+          background:
+            linear-gradient(
+              135deg,
+              #5b21b6,
+              #2563eb
+            );
 
-              margin-top: 65px;
+          color: #ffffff;
 
-            }
+          font-size: 10px;
 
+          font-weight: 800;
 
-            .signature {
+          text-align: center;
 
-              width: 180px;
+          vertical-align: middle;
 
-              text-align: center;
+          white-space: nowrap;
 
-              font-size: 12px;
+        }
 
-            }
 
+        thead th:last-child {
 
-            .signature-line {
+          border-right: none;
 
-              border-top:
-                1px solid #222;
+        }
 
-              margin-bottom: 7px;
 
-            }
+        tbody td {
 
+          padding: 9px 5px;
 
-            /* =========================================
-               FOOTER
-               ========================================= */
+          border-right: 1px solid #ddd6fe;
 
-            .footer {
+          border-bottom: 1px solid #ddd6fe;
 
-              text-align: center;
+          font-size: 10.5px;
 
-              margin-top: 25px;
+          text-align: center;
 
-              padding-top: 8px;
+          vertical-align: middle;
 
-              border-top:
-                1px solid #ccc;
+          height: 35px;
 
-              font-size: 9px;
+          background: #ffffff;
 
-              color: #666;
+        }
 
-            }
 
+        tbody tr:nth-child(even) td {
 
-            /* =========================================
-               PRINT
-               ========================================= */
+          background: #f5f3ff;
 
-            @media print {
+        }
 
-              body {
 
-                -webkit-print-color-adjust:
-                  exact;
+        tbody tr:nth-child(odd) td {
 
-                print-color-adjust:
-                  exact;
+          background: #fffbeb;
 
-              }
+        }
 
-            }
 
-          </style>
+        tbody tr:last-child td {
 
-        </head>
+          border-bottom: none;
 
+        }
 
-        <body>
 
+        tbody td:last-child {
 
-          <!-- SCHOOL HEADER -->
+          border-right: none;
 
-          <div class="school-header">
+        }
 
-            <h1>
-              Government Girls Primary School
-            </h1>
 
-            <h2>
-              Sarmast Mira Khel Bannu
-            </h2>
+        td.subject {
 
-            <div class="school-motto">
-              Educate Today, Empower Tomorrow.
-            </div>
+          text-align: left;
 
+          font-weight: 700;
+
+          color: #4c1d95;
+
+        }
+
+
+        td:first-child {
+
+          font-weight: 800;
+
+          color: #5b21b6;
+
+          width: 32px;
+
+        }
+
+
+        /* Date */
+
+        tbody td:nth-child(3) {
+
+          font-weight: 700;
+
+          color: #1d4ed8;
+
+        }
+
+
+        /* Day */
+
+        tbody td:nth-child(4) {
+
+          font-weight: 700;
+
+          color: #7c3aed;
+
+        }
+
+
+        /* Start time */
+
+        tbody td:nth-child(5) {
+
+          font-weight: 700;
+
+          color: #047857;
+
+        }
+
+
+        /* End time */
+
+        tbody td:nth-child(6) {
+
+          font-weight: 700;
+
+          color: #b45309;
+
+        }
+
+
+        /* Marks */
+
+        tbody td:nth-child(7),
+
+        tbody td:nth-child(8) {
+
+          font-weight: 800;
+
+          color: #be123c;
+
+        }
+
+
+        /* =========================================
+           NOTE
+           ========================================= */
+
+        .note {
+
+          margin-top: 15px;
+
+          padding: 10px 12px;
+
+          border-left: 5px solid #facc15;
+
+          border-top: 1px solid #fde68a;
+
+          border-right: 1px solid #fde68a;
+
+          border-bottom: 1px solid #fde68a;
+
+          border-radius: 6px;
+
+          background: #fffbeb;
+
+          color: #713f12;
+
+          font-size: 10.5px;
+
+          line-height: 1.5;
+
+        }
+
+
+        .note strong {
+
+          color: #92400e;
+
+        }
+
+
+        /* =========================================
+           SIGNATURES
+           ========================================= */
+
+        .signatures {
+
+          display: flex;
+
+          justify-content: space-between;
+
+          align-items: flex-end;
+
+          margin-top: 55px;
+
+          padding: 0 35px;
+
+        }
+
+
+        .signature {
+
+          width: 175px;
+
+          text-align: center;
+
+          font-size: 11px;
+
+          font-weight: 700;
+
+          color: #374151;
+
+        }
+
+
+        .signature-line {
+
+          border-top: 2px solid #5b21b6;
+
+          margin-bottom: 7px;
+
+        }
+
+
+        /* =========================================
+           FOOTER
+           ========================================= */
+
+        .footer {
+
+          text-align: center;
+
+          margin-top: 25px;
+
+          padding-top: 8px;
+
+          border-top: 1px solid #ddd6fe;
+
+          font-size: 8.5px;
+
+          color: #6b7280;
+
+        }
+
+
+        /* =========================================
+           PRINT SETTINGS
+           ========================================= */
+
+        @media print {
+
+          html,
+          body {
+
+            width: 210mm;
+
+            min-height: 297mm;
+
+          }
+
+
+          body {
+
+            -webkit-print-color-adjust: exact !important;
+
+            print-color-adjust: exact !important;
+
+          }
+
+
+          .school-header,
+          thead th {
+
+            -webkit-print-color-adjust: exact !important;
+
+            print-color-adjust: exact !important;
+
+          }
+
+
+          table {
+
+            page-break-inside: avoid;
+
+          }
+
+
+          tr {
+
+            page-break-inside: avoid;
+
+            page-break-after: auto;
+
+          }
+
+
+          .note {
+
+            page-break-inside: avoid;
+
+          }
+
+
+          .signatures {
+
+            page-break-inside: avoid;
+
+          }
+
+        }
+
+      </style>
+
+    </head>
+
+
+    <body>
+
+
+      <!-- =========================================
+           SCHOOL HEADER
+           ========================================= -->
+
+      <div class="school-header">
+
+        <h1>
+          Government Girls Primary School
+        </h1>
+
+        <h2>
+          Sarmast Mira Khel Bannu
+        </h2>
+
+        <div class="school-motto">
+          Educate Today, Empower Tomorrow.
+        </div>
+
+      </div>
+
+
+      <!-- =========================================
+           EXAM INFORMATION
+           ========================================= -->
+
+      <div class="document-title">
+
+        <h2>
+          ${escapeHtml(examName)}
+        </h2>
+
+        <div class="exam-info">
+
+          <div>
+            <strong>Exam Type:</strong>
+            ${escapeHtml(examType)}
           </div>
 
-
-          <!-- EXAM TITLE -->
-
-          <div class="document-title">
-
-            <h2>
-              ${escapeHtml(examName)}
-            </h2>
-
-            <div class="exam-info">
-
-              <div>
-                <strong>Exam Type:</strong>
-                ${escapeHtml(examType)}
-              </div>
-
-              <div>
-                <strong>Class:</strong>
-                ${escapeHtml(className)}
-              </div>
-
-            </div>
-
+          <div>
+            <strong>Class:</strong>
+            ${escapeHtml(className)}
           </div>
 
+        </div>
 
-          <!-- TABLE -->
+      </div>
 
-          <table>
 
-            <thead>
+      <!-- =========================================
+           EXAM TIMETABLE
+           ========================================= -->
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>#</th>
+
+            <th>Subject</th>
+
+            <th>Date</th>
+
+            <th>Day</th>
+
+            <th>Start Time</th>
+
+            <th>End Time</th>
+
+            <th>Max Marks</th>
+
+            <th>Passing Marks</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          ${examSubjects.map((item, index) => {
+
+            const subjectName =
+              subjectMap[item.subjectId] ||
+              item.subjectName ||
+              'Unknown Subject';
+
+
+            return `
 
               <tr>
 
-                <th>#</th>
+                <td>
+                  ${index + 1}
+                </td>
 
-                <th>Subject</th>
 
-                <th>Date</th>
+                <td class="subject">
+                  ${escapeHtml(subjectName)}
+                </td>
 
-                <th>Day</th>
 
-                <th>Start Time</th>
+                <td>
+                  ${
+                    item.date
+                      ? formatExamDate(item.date)
+                      : 'Not Scheduled'
+                  }
+                </td>
 
-                <th>End Time</th>
 
-                <th>Max Marks</th>
+                <td>
+                  ${
+                    item.date
+                      ? getExamDay(item.date)
+                      : '-'
+                  }
+                </td>
 
-                <th>Passing Marks</th>
+
+                <td>
+                  ${item.startTime || '-'}
+                </td>
+
+
+                <td>
+                  ${item.endTime || '-'}
+                </td>
+
+
+                <td>
+                  ${item.maxMarks ?? '-'}
+                </td>
+
+
+                <td>
+                  ${item.passingMarks ?? '-'}
+                </td>
 
               </tr>
 
-            </thead>
+            `;
 
-            <tbody>
+          }).join('')}
 
-              ${examSubjects.map((item, index) => {
+        </tbody>
 
-                const subjectName =
-                  subjectMap[item.subjectId] ||
-                  item.subjectName ||
-                  'Unknown Subject';
+      </table>
 
 
-                return `
+      <!-- =========================================
+           NOTE
+           ========================================= -->
 
-                  <tr>
+      <div class="note">
 
-                    <td>
-                      ${index + 1}
-                    </td>
+        <strong>Note:</strong>
 
-                    <td class="subject">
-                      ${escapeHtml(subjectName)}
-                    </td>
+        Students should reach the examination room
+        at least 15 minutes before the scheduled time.
 
-                    <td>
-                      ${
-                        item.date
-                          ? formatExamDate(item.date)
-                          : 'Not Scheduled'
-                      }
-                    </td>
-
-                    <td>
-                      ${
-                        item.date
-                          ? getExamDay(item.date)
-                          : '-'
-                      }
-                    </td>
-
-                    <td>
-                      ${item.startTime || '-'}
-                    </td>
-
-                    <td>
-                      ${item.endTime || '-'}
-                    </td>
-
-                    <td>
-                      ${item.maxMarks ?? '-'}
-                    </td>
-
-                    <td>
-                      ${item.passingMarks ?? '-'}
-                    </td>
-
-                  </tr>
-
-                `;
-
-              }).join('')}
-
-            </tbody>
-
-          </table>
+      </div>
 
 
-          <!-- NOTE -->
+      <!-- =========================================
+           SIGNATURES
+           ========================================= -->
 
-          <div class="note">
-
-            <strong>Note:</strong>
-            Students should reach the examination room
-            at least 15 minutes before the scheduled time.
-
-          </div>
+      <div class="signatures">
 
 
-          <!-- SIGNATURES -->
+        <div class="signature">
 
-          <div class="signatures">
+          <div class="signature-line"></div>
 
-            <div class="signature">
+          Class Teacher
 
-              <div class="signature-line"></div>
-
-              Class Teacher
-
-            </div>
+        </div>
 
 
-            <div class="signature">
+        <div class="signature">
 
-              <div class="signature-line"></div>
+          <div class="signature-line"></div>
 
-              Head Mistress
+          Head Mistress
 
-            </div>
-
-          </div>
+        </div>
 
 
-          <!-- FOOTER -->
-
-          <div class="footer">
-
-            Government Girls Primary School
-            Sarmast Mira Khel Bannu
-
-          </div>
+      </div>
 
 
-          <script>
+      <!-- =========================================
+           FOOTER
+           ========================================= -->
 
-            window.onload = function() {
+      <div class="footer">
 
-              setTimeout(function() {
+        Government Girls Primary School
+        &nbsp;•&nbsp;
+        Sarmast Mira Khel Bannu
+        &nbsp;•&nbsp;
+        Educate Today, Empower Tomorrow.
 
-                window.print();
-
-              }, 400);
-
-            };
-
-          <\/script>
-
-
-        </body>
-
-        </html>
-
-      `);
+      </div>
 
 
-      printWindow.document.close();
+      <script>
 
-    };
+        window.onload = function() {
+
+          setTimeout(function() {
+
+            window.print();
+
+          }, 500);
+
+        };
+
+      <\/script>
 
 
+    </body>
+
+    </html>
+
+  `);
+
+
+  printWindow.document.close();
+
+};          
+
+          
   } catch (error) {
 
     console.error(
