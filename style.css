@@ -1127,3 +1127,122 @@ textarea:focus {
     width: 100%;
   }
 }
+
+
+/* ===================================================
+   EXAM TIMETABLE FORM CONTROLS
+   =================================================== */
+
+/* Date, Start Time and End Time fields */
+#exam-subject-schedule input[type="date"],
+#exam-subject-schedule input[type="time"],
+#exam-subject-schedule input[type="number"] {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #d7dce5;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #263238;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* Focus effect */
+#exam-subject-schedule input[type="date"]:focus,
+#exam-subject-schedule input[type="time"]:focus,
+#exam-subject-schedule input[type="number"]:focus {
+  border-color: #6c4ab6;
+  box-shadow: 0 0 0 3px rgba(108, 74, 182, 0.12);
+}
+
+/* Time input appearance */
+#exam-subject-schedule input[type="time"] {
+  min-width: 125px;
+  cursor: pointer;
+}
+
+/* Date input appearance */
+#exam-subject-schedule input[type="date"] {
+  min-width: 145px;
+  cursor: pointer;
+}
+
+/* Number fields */
+#exam-subject-schedule input[type="number"] {
+  min-width: 105px;
+}
+
+/* Subject timetable table */
+.exam-timetable-table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid #e2e5eb;
+  border-radius: 10px;
+}
+
+/* Timetable header */
+.exam-timetable-table th {
+  padding: 12px 10px;
+  background: #f5f3fa;
+  color: #34303d;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid #ddd9e8;
+}
+
+/* Timetable cells */
+.exam-timetable-table td {
+  padding: 11px 10px;
+  background: #ffffff;
+  color: #444;
+  font-size: 13px;
+  text-align: center;
+  border-bottom: 1px solid #eeeeee;
+}
+
+/* Subject column */
+.exam-timetable-table td:nth-child(2) {
+  text-align: left;
+}
+
+/* Remove bottom border from final row */
+.exam-timetable-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Hover effect */
+.exam-timetable-table tbody tr:hover td {
+  background: #faf9fd;
+}
+
+
+/* ===================================================
+   MOBILE EXAM FORM
+   =================================================== */
+
+@media (max-width: 768px) {
+
+  #exam-subject-schedule {
+    overflow-x: auto;
+  }
+
+  #exam-subject-schedule table {
+    min-width: 900px;
+  }
+
+  #exam-subject-schedule input[type="time"] {
+    min-width: 120px;
+  }
+
+  #exam-subject-schedule input[type="date"] {
+    min-width: 140px;
+  }
+
+}
