@@ -2532,16 +2532,38 @@ window.openExamModal = async function(id = null) {
 /* ---------------------------------------------------
    VIEW COMPLETE EXAM TIMETABLE
    --------------------------------------------------- */
-
 window.viewExamTimetable = async function(groupId) {
 
   try {
 
     let examSubjects = [];
 
-    /*
-     * First try grouped exam.
-     */
+    /* =================================================
+       LOAD SUBJECT NAMES
+       ================================================= */
+
+    const subjectsSnap = await getDocs(
+      collection(db, "subjects")
+    );
+
+    const subjectMap = {};
+
+    subjectsSnap.forEach(docSnap => {
+
+      const data = docSnap.data();
+
+      subjectMap[docSnap.id] =
+        data.name ||
+        data.subjectName ||
+        'Unknown Subject';
+
+    });
+
+
+    /* =================================================
+       LOAD EXAM SUBJECT SCHEDULES
+       ================================================= */
+
     const groupedQuery = query(
       collection(db, "exams"),
       where("examGroupId", "==", groupId)
@@ -2564,13 +2586,11 @@ window.viewExamTimetable = async function(groupId) {
 
     } else {
 
-      /*
-       * Legacy single-subject exam.
-       */
-      const oldDoc =
-        await getDoc(
-          doc(db, "exams", groupId)
-        );
+      /* Legacy exam support */
+
+      const oldDoc = await getDoc(
+        doc(db, "exams", groupId)
+      );
 
       if (oldDoc.exists()) {
 
@@ -2580,6 +2600,7 @@ window.viewExamTimetable = async function(groupId) {
         });
 
       }
+
     }
 
 
@@ -2588,8 +2609,13 @@ window.viewExamTimetable = async function(groupId) {
       alert("Exam timetable not found.");
 
       return;
+
     }
 
+
+    /* =================================================
+       SORT BY DATE AND TIME
+       ================================================= */
 
     examSubjects.sort((a, b) => {
 
@@ -2600,51 +2626,67 @@ window.viewExamTimetable = async function(groupId) {
         b.date || '9999-12-31';
 
       if (dateA !== dateB) {
+
         return dateA.localeCompare(dateB);
+
       }
 
       return (a.startTime || '')
-        .localeCompare(a.startTime || '');
+        .localeCompare(b.startTime || '');
+
     });
 
 
+    /* =================================================
+       EXAM INFORMATION
+       ================================================= */
+
     const examName =
-      examSubjects[0].name || 'Exam';
+      examSubjects[0].name ||
+      'Examination';
 
     const examType =
-      examSubjects[0].type || '';
+      examSubjects[0].type ||
+      '';
 
     const className =
-      examSubjects[0].class || '';
+      examSubjects[0].class ||
+      '';
 
+
+    /* =================================================
+       BUILD TIMETABLE ROWS
+       ================================================= */
 
     let rowsHtml = '';
-
 
     examSubjects.forEach((item, index) => {
 
       const subjectName =
-        item.subjectId
-          ? item.subjectId
-          : 'Subject';
+        subjectMap[item.subjectId] ||
+        item.subjectName ||
+        'Unknown Subject';
 
 
       rowsHtml += `
+
         <tr>
 
-          <td>${index + 1}</td>
+          <td class="serial">
+            ${index + 1}
+          </td>
 
-          <td>
-            ${escapeHtml(
-              item.subjectName || subjectName
-            )}
+          <td class="subject-cell">
+            <strong>
+              ${escapeHtml(subjectName)}
+            </strong>
           </td>
 
           <td>
             ${
               item.date
                 ? formatExamDate(item.date)
-                : 'Not scheduled'
+                : 'Not Scheduled'
             }
           </td>
 
@@ -2657,246 +2699,810 @@ window.viewExamTimetable = async function(groupId) {
           </td>
 
           <td>
-            ${item.startTime || '-'}
+            ${
+              item.startTime
+                ? item.startTime
+                : '-'
+            }
           </td>
 
           <td>
-            ${item.endTime || '-'}
+            ${
+              item.endTime
+                ? item.endTime
+                : '-'
+            }
           </td>
 
           <td>
             ${item.maxMarks ?? '-'}
           </td>
 
-          <td>${item.passingMarks ?? '-'}</td>
+          <td>
+            ${item.passingMarks ?? '-'}
+          </td>
 
         </tr>
 
       `;
+
     });
 
 
-    const printWindow =
-      window.open(
-        '',
-        '_blank',
-        'width=1000,height=800'
-      );
+    /* =================================================
+       VIEW MODAL
+       ================================================= */
+
+    const html = `
+
+      <div class="exam-timetable-wrapper">
+
+        <!-- SCHOOL HEADER -->
+
+        <div class="exam-school-header">
+
+          <div class="exam-school-emblem">
+            <i class="fa fa-school"></i>
+          </div>
+
+          <div>
+
+            <h1>
+              Government Girls Primary School
+            </h1>
+
+            <h2>
+              Sarmast Mira Khel Bannu
+            </h2>
+
+            <div class="exam-school-motto">
+              Educate Today, Empower Tomorrow.
+            </div>
+
+          </div>
+
+        </div>
 
 
-    if (!printWindow) {
+        <!-- EXAM INFORMATION -->
 
-      alert(
-        "Please allow pop-ups in your browser to print the timetable."
-      );
+        <div class="exam-title-box">
 
-      return;
-    }
+          <div class="exam-title">
+
+            <h2>
+              ${escapeHtml(examName)}
+            </h2>
+
+            <div class="exam-meta">
+
+              <span>
+                <strong>Exam Type:</strong>
+                ${escapeHtml(examType)}
+              </span>
+
+              <span>
+                <strong>Class:</strong>
+                ${escapeHtml(className)}
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
 
 
-    printWindow.document.write(`
+        <!-- TIMETABLE -->
 
-      <!DOCTYPE html>
+        <div class="exam-timetable-container">
 
-      <html>
+          <table class="exam-timetable-table">
 
-      <head>
+            <thead>
 
-        <title>
-          ${escapeHtml(examName)} -
-          ${escapeHtml(className)}
-          Timetable
-        </title>
+              <tr>
 
-        <style>
+                <th>#</th>
 
-          * {
-            box-sizing: border-box;
-          }
+                <th>Subject</th>
 
-          body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            color: #111;
-          }
+                <th>Date</th>
 
-          .header {
-            text-align: center;
-            margin-bottom: 25px;
-          }
+                <th>Day</th>
 
-          .header h1 {
-            margin: 0 0 8px;
-            font-size: 24px;
-          }
+                <th>Start Time</th>
 
-          .header h2 {
-            margin: 5px 0;
-            font-size: 20px;
-          }
+                <th>End Time</th>
 
-          .header p {
-            margin: 8px 0;
-            font-size: 14px;
-          }
+                <th>Max Marks</th>
 
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-          }
+                <th>Passing Marks</th>
 
-          th,
-          td {
-            border: 1px solid #222;
-            padding: 10px 8px;
-            text-align: center;
-          }
+              </tr>
 
-          th {
-            font-weight: bold;
-          }
+            </thead>
 
-          td:nth-child(2) {
-            text-align: left;
-          }
+            <tbody>
 
-          .footer {
-            margin-top: 45px;
-            display: flex;
-            justify-content: space-between;
-          }
+              ${rowsHtml}
 
-          .signature {
-            width: 200px;
-            text-align: center;
-            border-top: 1px solid #222;
-            padding-top: 7px;
-          }
+            </tbody>
 
-          @media print {
+          </table>
+
+        </div>
+
+
+        <!-- NOTE -->
+
+        <div class="exam-timetable-note">
+
+          <strong>Note:</strong>
+          Students should reach the examination room
+          at least 15 minutes before the scheduled time.
+
+        </div>
+
+
+        <!-- SIGNATURES -->
+
+        <div class="exam-signatures">
+
+          <div class="exam-signature-box">
+
+            <div class="signature-line"></div>
+
+            <strong>
+              Class Teacher
+            </strong>
+
+          </div>
+
+
+          <div class="exam-signature-box">
+
+            <div class="signature-line"></div>
+
+            <strong>
+              Head Mistress
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- PRINT BUTTON -->
+
+        <div class="exam-print-controls">
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="window.printExamTimetable()">
+
+            <i class="fa fa-print"></i>
+
+            Print Timetable
+
+          </button>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    openModal(
+      `Exam Timetable - ${className}`,
+      html
+    );
+
+
+    /* =================================================
+       PRINT FUNCTION FOR THIS TIMETABLE
+       ================================================= */
+
+    window.printExamTimetable = function() {
+
+      const printWindow =
+        window.open(
+          '',
+          '_blank',
+          'width=1000,height=800'
+        );
+
+
+      if (!printWindow) {
+
+        alert(
+          "Please allow pop-ups in your browser to print the timetable."
+        );
+
+        return;
+
+      }
+
+
+      printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html>
+
+        <head>
+
+          <title>
+            ${escapeHtml(examName)}
+            - ${escapeHtml(className)}
+          </title>
+
+
+          <style>
+
+            @page {
+              size: A4 portrait;
+              margin: 12mm;
+            }
+
+
+            * {
+              box-sizing: border-box;
+            }
+
+
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+            }
+
 
             body {
-              margin: 15mm;
+
+              font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+              color: #202124;
+
+              background: #ffffff;
+
+              position: relative;
+
             }
 
-            .no-print {
-              display: none !important;
+
+            /* =========================================
+               WATERMARK
+               ========================================= */
+
+            body::before {
+
+              content:
+                "GOVT. GIRLS PRIMARY SCHOOL\\A"
+                "SARMAST MIRA KHEL BANNU";
+
+              white-space: pre;
+
+              position: fixed;
+
+              top: 50%;
+
+              left: 50%;
+
+              transform:
+                translate(-50%, -50%)
+                rotate(-35deg);
+
+              font-size: 48px;
+
+              font-weight: 700;
+
+              line-height: 1.4;
+
+              text-align: center;
+
+              letter-spacing: 2px;
+
+              opacity: 0.045;
+
+              z-index: -1;
+
+              width: 100%;
+
             }
+
+
+            /* =========================================
+               SCHOOL HEADER
+               ========================================= */
+
+            .school-header {
+
+              text-align: center;
+
+              padding-bottom: 14px;
+
+              border-bottom:
+                3px solid #333;
+
+              position: relative;
+
+            }
+
+
+            .school-header h1 {
+
+              margin: 0;
+
+              font-size: 24px;
+
+              font-weight: 800;
+
+              letter-spacing: 0.4px;
+
+            }
+
+
+            .school-header h2 {
+
+              margin:
+                4px 0 5px;
+
+              font-size: 19px;
+
+              font-weight: 700;
+
+            }
+
+
+            .school-motto {
+
+              font-size: 12px;
+
+              font-style: italic;
+
+              margin-top: 5px;
+
+            }
+
+
+            /* =========================================
+               DOCUMENT TITLE
+               ========================================= */
+
+            .document-title {
+
+              text-align: center;
+
+              margin:
+                18px 0 15px;
+
+            }
+
+
+            .document-title h2 {
+
+              margin: 0;
+
+              font-size: 21px;
+
+              text-transform: uppercase;
+
+              letter-spacing: 0.8px;
+
+            }
+
+
+            .exam-info {
+
+              margin-top: 8px;
+
+              display: flex;
+
+              justify-content: center;
+
+              gap: 45px;
+
+              font-size: 13px;
+
+            }
+
+
+            /* =========================================
+               TABLE
+               ========================================= */
 
             table {
-              page-break-inside: auto;
+
+              width: 100%;
+
+              border-collapse: collapse;
+
+              margin-top: 12px;
+
             }
 
-            tr {
-              page-break-inside: avoid;
-              page-break-after: auto;
+
+            th {
+
+              padding: 9px 6px;
+
+              border:
+                1px solid #222;
+
+              font-size: 11px;
+
+              font-weight: 700;
+
+              text-align: center;
+
             }
 
-          }
 
-        </style>
+            td {
 
-      </head>
+              padding: 9px 6px;
 
+              border:
+                1px solid #333;
 
-      <body>
+              font-size: 11px;
 
-        <div class="header">
+              text-align: center;
 
-          <h1>
-            School Examination Timetable
-          </h1>
+              height: 35px;
 
-          <h2>
-            ${escapeHtml(examName)}
-          </h2>
-
-          <p>
-            <strong>Exam Type:</strong>
-            ${escapeHtml(examType)}
-            &nbsp;&nbsp;&nbsp;&nbsp;
-
-            <strong>Class:</strong>
-            ${escapeHtml(className)}
-          </p>
-
-        </div>
+            }
 
 
-        <table>
+            td.subject {
 
-          <thead>
+              text-align: left;
 
-            <tr>
+              font-weight: 600;
 
-              <th>#</th>
-              <th>Subject</th>
-              <th>Date</th>
-              <th>Day</th>
-              <th>Start Time</th>
-              <th>End Time</th>
-              <th>Max Marks</th>
-              <th>Passing Marks</th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rowsHtml}
-
-          </tbody>
-
-        </table>
+            }
 
 
-        <div class="footer">
+            .serial {
 
-          <div class="signature">
-            Class Teacher
+              width: 35px;
+
+            }
+
+
+            /* =========================================
+               NOTE
+               ========================================= */
+
+            .note {
+
+              margin-top: 15px;
+
+              padding: 9px 11px;
+
+              border:
+                1px solid #aaa;
+
+              font-size: 11px;
+
+            }
+
+
+            /* =========================================
+               SIGNATURES
+               ========================================= */
+
+            .signatures {
+
+              display: flex;
+
+              justify-content: space-between;
+
+              margin-top: 65px;
+
+            }
+
+
+            .signature {
+
+              width: 180px;
+
+              text-align: center;
+
+              font-size: 12px;
+
+            }
+
+
+            .signature-line {
+
+              border-top:
+                1px solid #222;
+
+              margin-bottom: 7px;
+
+            }
+
+
+            /* =========================================
+               FOOTER
+               ========================================= */
+
+            .footer {
+
+              text-align: center;
+
+              margin-top: 25px;
+
+              padding-top: 8px;
+
+              border-top:
+                1px solid #ccc;
+
+              font-size: 9px;
+
+              color: #666;
+
+            }
+
+
+            /* =========================================
+               PRINT
+               ========================================= */
+
+            @media print {
+
+              body {
+
+                -webkit-print-color-adjust:
+                  exact;
+
+                print-color-adjust:
+                  exact;
+
+              }
+
+            }
+
+          </style>
+
+        </head>
+
+
+        <body>
+
+
+          <!-- SCHOOL HEADER -->
+
+          <div class="school-header">
+
+            <h1>
+              Government Girls Primary School
+            </h1>
+
+            <h2>
+              Sarmast Mira Khel Bannu
+            </h2>
+
+            <div class="school-motto">
+              Educate Today, Empower Tomorrow.
+            </div>
+
           </div>
 
-          <div class="signature">
-            Head Mistress
+
+          <!-- EXAM TITLE -->
+
+          <div class="document-title">
+
+            <h2>
+              ${escapeHtml(examName)}
+            </h2>
+
+            <div class="exam-info">
+
+              <div>
+                <strong>Exam Type:</strong>
+                ${escapeHtml(examType)}
+              </div>
+
+              <div>
+                <strong>Class:</strong>
+                ${escapeHtml(className)}
+              </div>
+
+            </div>
+
           </div>
 
-        </div>
+
+          <!-- TABLE -->
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>#</th>
+
+                <th>Subject</th>
+
+                <th>Date</th>
+
+                <th>Day</th>
+
+                <th>Start Time</th>
+
+                <th>End Time</th>
+
+                <th>Max Marks</th>
+
+                <th>Passing Marks</th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              ${examSubjects.map((item, index) => {
+
+                const subjectName =
+                  subjectMap[item.subjectId] ||
+                  item.subjectName ||
+                  'Unknown Subject';
 
 
-        <script>
+                return `
 
-          window.onload = function() {
+                  <tr>
 
-            window.print();
+                    <td>
+                      ${index + 1}
+                    </td>
 
-          };
+                    <td class="subject">
+                      ${escapeHtml(subjectName)}
+                    </td>
 
-        <\/script>
+                    <td>
+                      ${
+                        item.date
+                          ? formatExamDate(item.date)
+                          : 'Not Scheduled'
+                      }
+                    </td>
 
-      </body>
+                    <td>
+                      ${
+                        item.date
+                          ? getExamDay(item.date)
+                          : '-'
+                      }
+                    </td>
 
-      </html>
+                    <td>
+                      ${item.startTime || '-'}
+                    </td>
 
-    `);
+                    <td>
+                      ${item.endTime || '-'}
+                    </td>
+
+                    <td>
+                      ${item.maxMarks ?? '-'}
+                    </td>
+
+                    <td>
+                      ${item.passingMarks ?? '-'}
+                    </td>
+
+                  </tr>
+
+                `;
+
+              }).join('')}
+
+            </tbody>
+
+          </table>
 
 
-    printWindow.document.close();
+          <!-- NOTE -->
+
+          <div class="note">
+
+            <strong>Note:</strong>
+            Students should reach the examination room
+            at least 15 minutes before the scheduled time.
+
+          </div>
+
+
+          <!-- SIGNATURES -->
+
+          <div class="signatures">
+
+            <div class="signature">
+
+              <div class="signature-line"></div>
+
+              Class Teacher
+
+            </div>
+
+
+            <div class="signature">
+
+              <div class="signature-line"></div>
+
+              Head Mistress
+
+            </div>
+
+          </div>
+
+
+          <!-- FOOTER -->
+
+          <div class="footer">
+
+            Government Girls Primary School
+            Sarmast Mira Khel Bannu
+
+          </div>
+
+
+          <script>
+
+            window.onload = function() {
+
+              setTimeout(function() {
+
+                window.print();
+
+              }, 400);
+
+            };
+
+          <\/script>
+
+
+        </body>
+
+        </html>
+
+      `);
+
+
+      printWindow.document.close();
+
+    };
+
 
   } catch (error) {
 
     console.error(
-      "Error printing exam timetable:",
+      "Error viewing exam timetable:",
       error
     );
 
     alert(
-      "Error printing timetable: " +
+      "Error loading exam timetable: " +
       error.message
     );
+
   }
+
 };
+
 
 
 /* ---------------------------------------------------
