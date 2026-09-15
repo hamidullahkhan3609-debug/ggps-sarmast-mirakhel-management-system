@@ -1693,120 +1693,1292 @@ window.openSubjectModal = async function(id = null) {
 
 /* ===================================================
    MODULE 5: EXAM MANAGEMENT
+   WHOLE-CLASS EXAMS + SUBJECT-WISE EXAM TIMETABLE
    =================================================== */
+
 async function loadExams() {
   const tbody = document.getElementById('exams-table-body');
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="8">Loading exams...</td></tr>`;
 
-  const snap = await getDocs(collection(db, "exams"));
-  const subjectsSnap = await getDocs(collection(db, "subjects"));
-  const subjectMap = {};
-  subjectsSnap.forEach(s => subjectMap[s.id] = s.data().name);
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="8">Loading exams...</td>
+    </tr>
+  `;
 
-  const filterClass = document.getElementById('exam-filter-class')?.value;
-  const filterType = document.getElementById('exam-filter-type')?.value;
+  try {
+    const snap = await getDocs(collection(db, "exams"));
 
-  tbody.innerHTML = '';
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-    data.id = docSnap.id;
+    /*
+     * Each document in "exams" represents one subject
+     * inside a complete class exam.
+     *
+     * Example:
+     * Mid-Term Exam | Class 1 | English
+     * Mid-Term Exam | Class 1 | Urdu
+     * Mid-Term Exam | Class 1 | Mathematics
+     *
+     * All of them share the same examGroupId.
+     */
 
-    if (filterClass && data.class !== filterClass) return;
-    if (filterType && data.type !== filterType) return;
+    const groups = {};
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${data.name}</td>
-      <td>${data.type || 'N/A'}</td>
-      <td>${data.class}</td>
-      <td>${subjectMap[data.subjectId] || 'N/A'}</td>
-      <td>${data.maxMarks}</td>
-      <td>${data.passingMarks}</td>
-      <td>${data.date || ''}</td>
-      <td>
-        ${(userRole === 'superadmin' || userRole === 'admin') ? `<button class="btn btn-primary btn-sm" onclick="openExamModal('${data.id}')"><i class="fa fa-edit"></i></button>` : ''}
-        ${(userRole === 'superadmin') ? `<button class="btn btn-danger btn-sm" onclick="deleteRecord('exams', '${data.id}', loadExams)"><i class="fa fa-trash"></i></button>` : ''}
-      </td>
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+
+      /*
+       * New grouped exams use examGroupId.
+       * Old records without examGroupId are kept as
+       * individual legacy records so existing data
+       * is not lost.
+       */
+      const groupKey = data.examGroupId || `legacy_${docSnap.id}`;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          id: data.examGroupId || docSnap.id,
+          isLegacy: !data.examGroupId,
+          name: data.name || 'Unnamed Exam',
+          type: data.type || 'N/A',
+          class: data.class || 'N/A',
+          subjects: []
+        };
+      }
+
+      groups[groupKey].subjects.push({
+        id: docSnap.id,
+        ...data
+      });
+    });
+
+    const filterClass =
+      document.getElementById('exam-filter-class')?.value || '';
+
+    const filterType =
+      document.getElementById('exam-filter-type')?.value || '';
+
+    tbody.innerHTML = '';
+
+    Object.values(groups).forEach(group => {
+
+      if (filterClass && group.class !== filterClass) return;
+      if (filterType && group.type !== filterType) return;
+
+      /*
+       * Find earliest and latest exam dates.
+       */
+      const dates = group.subjects
+        .map(item => item.date)
+        .filter(Boolean)
+        .sort();
+
+      const firstDate = dates.length ? dates[0] : '';
+      const lastDate = dates.length ? dates[dates.length - 1] : '';
+
+      let dateDisplay = 'Not scheduled';
+
+      if (firstDate && lastDate) {
+        if (firstDate === lastDate) {
+          dateDisplay = formatExamDate(firstDate);
+        } else {
+          dateDisplay =
+            `${formatExamDate(firstDate)} - ${formatExamDate(lastDate)}`;
+        }
+      }
+
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${escapeHtml(group.name)}</td>
+
+        <td>${escapeHtml(group.type)}</td>
+
+        <td>${escapeHtml(group.class)}</td>
+
+        <td>
+          <strong>${group.subjects.length}</strong>
+          subject${group.subjects.length === 1 ? '' : 's'}
+        </td>
+
+        <td>${dateDisplay}</td>
+
+        <td>
+          <span class="badge green">
+            ${group.subjects.length} scheduled
+          </span>
+        </td>
+
+        <td>
+          <button
+            class="btn btn-info btn-sm"
+            onclick="window.viewExamTimetable('${group.id}')"
+            title="View Exam Timetable">
+            <i class="fa fa-eye"></i>
+            View Exam
+          </button>
+        </td>
+
+        <td>
+          ${
+            (userRole === 'superadmin' || userRole === 'admin')
+              ? `
+                <button
+                  class="btn btn-primary btn-sm"
+                  onclick="window.openExamModal('${group.id}')"
+                  title="Edit Exam">
+                  <i class="fa fa-edit"></i>
+                </button>
+              `
+              : ''
+          }
+
+          ${
+            userRole === 'superadmin'
+              ? `
+                <button
+                  class="btn btn-danger btn-sm"
+                  onclick="window.deleteExamGroup('${group.id}')"
+                  title="Delete Complete Exam">
+                  <i class="fa fa-trash"></i>
+                </button>
+              `
+              : ''
+          }
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    if (!tbody.hasChildNodes()) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8">No exams found.</td>
+        </tr>
+      `;
+    }
+
+  } catch (error) {
+    console.error("Error loading exams:", error);
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8">
+          Error loading exams: ${escapeHtml(error.message)}
+        </td>
+      </tr>
     `;
-    tbody.appendChild(tr);
-  });
-
-  if (!tbody.hasChildNodes()) {
-    tbody.innerHTML = `<tr><td colspan="8">No exams found.</td></tr>`;
   }
 }
 
-window.openExamModal = async function(id = null) {
-  let exam = { name: 'Mid-Term Exam', type: 'Mid-Term', class: 'Class 1', subjectId: '', maxMarks: 100, passingMarks: 40, date: '' };
-  if (id) {
-    const eDoc = await getDoc(doc(db, "exams", id));
-    if (eDoc.exists()) exam = eDoc.data();
+
+/* ---------------------------------------------------
+   DATE FORMATTER
+   --------------------------------------------------- */
+
+function formatExamDate(dateString) {
+  if (!dateString) return '';
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  if (isNaN(date.getTime())) {
+    return dateString;
   }
 
-  const subjectsSnap = await getDocs(collection(db, "subjects"));
-  let subjectOptions = '';
-  subjectsSnap.forEach(s => {
-    const sData = s.data();
-    subjectOptions += `<option value="${s.id}" ${exam.subjectId === s.id ? 'selected' : ''}>${sData.name} (${sData.class})</option>`;
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
   });
+}
+
+
+/* ---------------------------------------------------
+   DAY NAME
+   --------------------------------------------------- */
+
+function getExamDay(dateString) {
+  if (!dateString) return '';
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long'
+  });
+}
+
+
+/* ---------------------------------------------------
+   LOAD SUBJECTS FOR SELECTED CLASS
+   --------------------------------------------------- */
+
+async function loadExamSubjectsForClass(className, existingSubjects = []) {
+
+  const container =
+    document.getElementById('exam-subject-schedule');
+
+  if (!container) return;
+
+  const subjectsSnap =
+    await getDocs(collection(db, "subjects"));
+
+  const subjects = [];
+
+  subjectsSnap.forEach(docSnap => {
+    const data = docSnap.data();
+
+    if (data.class === className) {
+      subjects.push({
+        id: docSnap.id,
+        ...data
+      });
+    }
+  });
+
+  if (!subjects.length) {
+    container.innerHTML = `
+      <div class="alert alert-warning">
+        No subjects have been added for ${escapeHtml(className)}.
+        Please add the class subjects first.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="table" style="min-width:900px;">
+        <thead>
+          <tr>
+            <th style="width:50px;">Use</th>
+            <th>Subject</th>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Max Marks</th>
+            <th>Passing Marks</th>
+          </tr>
+        </thead>
+
+        <tbody id="exam-subject-rows"></tbody>
+      </table>
+    </div>
+  `;
+
+  const rowsContainer =
+    document.getElementById('exam-subject-rows');
+
+  subjects.forEach(subject => {
+
+    const existing =
+      existingSubjects.find(
+        item => item.subjectId === subject.id
+      );
+
+    /*
+     * For a new whole-class exam, all subjects are
+     * selected automatically.
+     */
+    const checked =
+      existing ? 'checked' : 'checked';
+
+    const date =
+      existing?.date || '';
+
+    const startTime =
+      existing?.startTime || '';
+
+    const endTime =
+      existing?.endTime || '';
+
+    const maxMarks =
+      existing?.maxMarks ?? 100;
+
+    const passingMarks =
+      existing?.passingMarks ?? 40;
+
+    const row = document.createElement('tr');
+
+    row.className = 'exam-subject-row';
+
+    row.dataset.subjectId = subject.id;
+
+    row.innerHTML = `
+      <td>
+        <input
+          type="checkbox"
+          class="exam-subject-check"
+          ${checked}>
+      </td>
+
+      <td>
+        <strong>${escapeHtml(subject.name || 'Unnamed Subject')}</strong>
+      </td>
+
+      <td>
+        <input
+          type="date"
+          class="exam-subject-date"
+          value="${date}">
+      </td>
+
+      <td>
+        <span class="exam-subject-day">
+          ${date ? getExamDay(date) : '-'}
+        </span>
+      </td>
+
+      <td>
+        <input
+          type="time"
+          class="exam-subject-start"
+          value="${startTime}">
+      </td>
+
+      <td>
+        <input
+          type="time"
+          class="exam-subject-end"
+          value="${endTime}">
+      </td>
+
+      <td>
+        <input
+          type="number"
+          class="exam-subject-max"
+          value="${maxMarks}"
+          min="1"
+          required>
+      </td>
+
+      <td>
+        <input
+          type="number"
+          class="exam-subject-pass"
+          value="${passingMarks}"
+          min="0"
+          required>
+      </td>
+    `;
+
+    rowsContainer.appendChild(row);
+
+    /*
+     * Automatically display the day when date changes.
+     */
+    const dateInput =
+      row.querySelector('.exam-subject-date');
+
+    const dayDisplay =
+      row.querySelector('.exam-subject-day');
+
+    dateInput.addEventListener('change', () => {
+      dayDisplay.textContent =
+        dateInput.value
+          ? getExamDay(dateInput.value)
+          : '-';
+    });
+  });
+}
+
+
+/* ---------------------------------------------------
+   ADD / EDIT COMPLETE CLASS EXAM
+   --------------------------------------------------- */
+
+window.openExamModal = async function(id = null) {
+
+  let existingSubjects = [];
+  let exam = {
+    name: 'Mid-Term Exam',
+    type: 'Mid-Term',
+    class: 'Class 1'
+  };
+
+  /*
+   * Editing an existing grouped exam.
+   */
+  if (id) {
+
+    const groupedQuery = query(
+      collection(db, "exams"),
+      where("examGroupId", "==", id)
+    );
+
+    const groupedSnap =
+      await getDocs(groupedQuery);
+
+    if (!groupedSnap.empty) {
+
+      groupedSnap.forEach(docSnap => {
+        const data = docSnap.data();
+
+        existingSubjects.push({
+          id: docSnap.id,
+          ...data
+        });
+      });
+
+      const first = existingSubjects[0];
+
+      exam = {
+        name: first.name || 'Exam',
+        type: first.type || 'Mid-Term',
+        class: first.class || 'Class 1'
+      };
+
+    } else {
+
+      /*
+       * Legacy exam record without examGroupId.
+       * It can still be edited and will be converted
+       * into the new grouped structure when saved.
+       */
+      const oldDoc =
+        await getDoc(doc(db, "exams", id));
+
+      if (oldDoc.exists()) {
+
+        const data = oldDoc.data();
+
+        existingSubjects = [{
+          id: oldDoc.id,
+          ...data
+        }];
+
+        exam = {
+          name: data.name || 'Exam',
+          type: data.type || 'Mid-Term',
+          class: data.class || 'Class 1'
+        };
+      }
+    }
+  }
 
   const html = `
     <form id="exam-form">
-      <div class="form-group"><label for="ex-name">Exam Name *</label><input type="text" id="ex-name" value="${exam.name}" required></div>
-      <div class="form-group"><label for="ex-type">Exam Type *</label>
-        <select id="ex-type">
-          <option value="Mid-Term" ${exam.type === 'Mid-Term' ? 'selected' : ''}>Mid-Term</option>
-          <option value="Annual" ${exam.type === 'Annual' ? 'selected' : ''}>Annual</option>
+
+      <div class="form-group">
+        <label for="ex-name">
+          Exam Name *
+        </label>
+
+        <input
+          type="text"
+          id="ex-name"
+          value="${escapeHtml(exam.name)}"
+          required>
+      </div>
+
+
+      <div class="form-group">
+        <label for="ex-type">
+          Exam Type *
+        </label>
+
+        <select id="ex-type" required>
+
+          <option
+            value="Mid-Term"
+            ${exam.type === 'Mid-Term' ? 'selected' : ''}>
+            Mid-Term
+          </option>
+
+          <option
+            value="Annual"
+            ${exam.type === 'Annual' ? 'selected' : ''}>
+            Annual
+          </option>
+
         </select>
       </div>
-      <div class="form-group"><label for="ex-class">Class *</label>
-        <select id="ex-class">
-          ${['Class 1','Class 2','Class 3','Class 4','Class 5'].map(c => `<option value="${c}" ${exam.class === c ? 'selected' : ''}>${c}</option>`).join('')}
+
+
+      <div class="form-group">
+        <label for="ex-class">
+          Class *
+        </label>
+
+        <select id="ex-class" required>
+
+          ${
+            ['Class 1','Class 2','Class 3','Class 4','Class 5']
+              .map(c => `
+                <option
+                  value="${c}"
+                  ${exam.class === c ? 'selected' : ''}>
+                  ${c}
+                </option>
+              `)
+              .join('')
+          }
+
         </select>
       </div>
-      <div class="form-group"><label for="ex-subject">Subject *</label>
-        <select id="ex-subject" required>${subjectOptions}</select>
+
+
+      <div class="form-group">
+
+        <label>
+          Subjects & Exam Timetable
+        </label>
+
+        <p style="margin:6px 0 12px;color:#666;">
+          Select the subjects included in this complete
+          class exam and set the date, time and marks
+          for each subject.
+        </p>
+
+        <div id="exam-subject-schedule">
+          Loading subjects...
+        </div>
+
       </div>
-      <div class="form-group"><label for="ex-max">Maximum Marks *</label><input type="number" id="ex-max" value="${exam.maxMarks}" min="1" required></div>
-      <div class="form-group"><label for="ex-pass">Passing Marks *</label><input type="number" id="ex-pass" value="${exam.passingMarks}" min="0" required></div>
-      <div class="form-group"><label for="ex-date">Exam Date</label><input type="date" id="ex-date" value="${exam.date}"></div>
-      <button type="submit" class="btn btn-primary">${id ? 'Update' : 'Save'} Exam</button>
+
+
+      <div style="margin-top:20px;">
+
+        <button
+          type="submit"
+          class="btn btn-primary">
+
+          <i class="fa fa-save"></i>
+          ${id ? 'Update Complete Exam' : 'Save Complete Exam'}
+
+        </button>
+
+      </div>
+
     </form>
   `;
-  openModal(id ? "Edit Exam" : "Add Exam", html);
 
-  document.getElementById('exam-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const maxMarks = Number(document.getElementById('ex-max').value);
-    const passingMarks = Number(document.getElementById('ex-pass').value);
+  openModal(
+    id ? "Edit Complete Exam" : "Add Complete Exam",
+    html
+  );
 
-    if (passingMarks > maxMarks) {
-      alert("Passing marks cannot exceed maximum marks.");
+
+  /*
+   * Load subjects immediately for the selected class.
+   */
+  await loadExamSubjectsForClass(
+    exam.class,
+    existingSubjects
+  );
+
+
+  /*
+   * Changing class reloads its subjects.
+   */
+  document
+    .getElementById('ex-class')
+    .addEventListener('change', async function() {
+
+      await loadExamSubjectsForClass(
+        this.value,
+        []
+      );
+
+    });
+
+
+  /*
+   * SAVE / UPDATE
+   */
+  document
+    .getElementById('exam-form')
+    .onsubmit = async function(e) {
+
+      e.preventDefault();
+
+      try {
+
+        const name =
+          document.getElementById('ex-name').value.trim();
+
+        const type =
+          document.getElementById('ex-type').value;
+
+        const className =
+          document.getElementById('ex-class').value;
+
+        const rows =
+          Array.from(
+            document.querySelectorAll('.exam-subject-row')
+          );
+
+
+        const selectedRows =
+          rows.filter(row =>
+            row.querySelector('.exam-subject-check').checked
+          );
+
+
+        if (!selectedRows.length) {
+          alert(
+            "Please select at least one subject for this exam."
+          );
+          return;
+        }
+
+
+        /*
+         * Create a group ID for a new exam.
+         *
+         * All subject records belonging to this exam
+         * receive the same ID.
+         */
+        let examGroupId = null;
+
+        if (id) {
+
+          /*
+           * If editing a new grouped exam, keep its
+           * existing group ID.
+           *
+           * If editing a legacy record, create a new
+           * group ID and convert it to the new system.
+           */
+          const groupedExisting =
+            existingSubjects.find(item => item.examGroupId);
+
+          examGroupId =
+            groupedExisting?.examGroupId ||
+            `exam_${Date.now()}_${Math.random()
+              .toString(36)
+              .substring(2, 8)}`;
+
+        } else {
+
+          examGroupId =
+            `exam_${Date.now()}_${Math.random()
+              .toString(36)
+              .substring(2, 8)}`;
+
+        }
+
+
+        /*
+         * Existing subject records for this group.
+         */
+        const existingMap = {};
+
+        existingSubjects.forEach(item => {
+
+          if (item.subjectId) {
+            existingMap[item.subjectId] = item;
+          }
+
+        });
+
+
+        /*
+         * Save every selected subject.
+         */
+        for (const row of selectedRows) {
+
+          const subjectId =
+            row.dataset.subjectId;
+
+          const date =
+            row.querySelector('.exam-subject-date').value;
+
+          const startTime =
+            row.querySelector('.exam-subject-start').value;
+
+          const endTime =
+            row.querySelector('.exam-subject-end').value;
+
+          const maxMarks =
+            Number(
+              row.querySelector('.exam-subject-max').value
+            );
+
+          const passingMarks =
+            Number(
+              row.querySelector('.exam-subject-pass').value
+            );
+
+
+          if (passingMarks > maxMarks) {
+
+            alert(
+              `Passing marks cannot exceed maximum marks.`
+            );
+
+            return;
+          }
+
+
+          if (startTime && endTime && endTime <= startTime) {
+
+            alert(
+              "End time must be later than start time."
+            );
+
+            return;
+          }
+
+
+          const payload = {
+
+            name: name,
+
+            type: type,
+
+            class: className,
+
+            subjectId: subjectId,
+
+            examGroupId: examGroupId,
+
+            maxMarks: maxMarks,
+
+            passingMarks: passingMarks,
+
+            date: date,
+
+            startTime: startTime,
+
+            endTime: endTime,
+
+            updatedAt: serverTimestamp()
+
+          };
+
+
+          const oldRecord =
+            existingMap[subjectId];
+
+
+          if (oldRecord) {
+
+            await updateDoc(
+              doc(db, "exams", oldRecord.id),
+              payload
+            );
+
+          } else {
+
+            payload.createdAt =
+              serverTimestamp();
+
+            await addDoc(
+              collection(db, "exams"),
+              payload
+            );
+          }
+        }
+
+
+        /*
+         * Delete subject records that were removed
+         * from the edited exam.
+         */
+        if (id) {
+
+          const selectedSubjectIds =
+            new Set(
+              selectedRows.map(
+                row => row.dataset.subjectId
+              )
+            );
+
+          for (const oldRecord of existingSubjects) {
+
+            if (
+              oldRecord.subjectId &&
+              !selectedSubjectIds.has(oldRecord.subjectId)
+            ) {
+
+              await deleteDoc(
+                doc(db, "exams", oldRecord.id)
+              );
+
+            }
+          }
+        }
+
+
+        closeModal();
+
+        await loadExams();
+
+        alert(
+          "Complete class exam saved successfully."
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Error saving exam:",
+          error
+        );
+
+        alert(
+          "Error saving exam: " +
+          error.message
+        );
+      }
+    };
+};
+
+
+/* ---------------------------------------------------
+   VIEW COMPLETE EXAM TIMETABLE
+   --------------------------------------------------- */
+
+window.viewExamTimetable = async function(groupId) {
+
+  try {
+
+    let examSubjects = [];
+
+    /*
+     * First try grouped exam.
+     */
+    const groupedQuery = query(
+      collection(db, "exams"),
+      where("examGroupId", "==", groupId)
+    );
+
+    const groupedSnap =
+      await getDocs(groupedQuery);
+
+
+    if (!groupedSnap.empty) {
+
+      groupedSnap.forEach(docSnap => {
+
+        examSubjects.push({
+          id: docSnap.id,
+          ...docSnap.data()
+        });
+
+      });
+
+    } else {
+
+      /*
+       * Legacy single-subject exam.
+       */
+      const oldDoc =
+        await getDoc(
+          doc(db, "exams", groupId)
+        );
+
+      if (oldDoc.exists()) {
+
+        examSubjects.push({
+          id: oldDoc.id,
+          ...oldDoc.data()
+        });
+
+      }
+    }
+
+
+    if (!examSubjects.length) {
+
+      alert("Exam timetable not found.");
+
       return;
     }
 
-    const payload = {
-      name: document.getElementById('ex-name').value,
-      type: document.getElementById('ex-type').value,
-      class: document.getElementById('ex-class').value,
-      subjectId: document.getElementById('ex-subject').value,
-      maxMarks: maxMarks,
-      passingMarks: passingMarks,
-      date: document.getElementById('ex-date').value,
-      updatedAt: serverTimestamp()
-    };
 
-    if (id) {
-      await updateDoc(doc(db, "exams", id), payload);
-    } else {
-      payload.createdAt = serverTimestamp();
-      await addDoc(collection(db, "exams"), payload);
+    examSubjects.sort((a, b) => {
+
+      const dateA =
+        a.date || '9999-12-31';
+
+      const dateB =
+        b.date || '9999-12-31';
+
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+
+      return (a.startTime || '')
+        .localeCompare(a.startTime || '');
+    });
+
+
+    const examName =
+      examSubjects[0].name || 'Exam';
+
+    const examType =
+      examSubjects[0].type || '';
+
+    const className =
+      examSubjects[0].class || '';
+
+
+    let rowsHtml = '';
+
+
+    examSubjects.forEach((item, index) => {
+
+      const subjectName =
+        item.subjectId
+          ? item.subjectId
+          : 'Subject';
+
+
+      rowsHtml += `
+        <tr>
+
+          <td>${index + 1}</td>
+
+          <td>
+            ${escapeHtml(
+              item.subjectName || subjectName
+            )}
+          </td>
+
+          <td>
+            ${
+              item.date
+                ? formatExamDate(item.date)
+                : 'Not scheduled'
+            }
+          </td>
+
+          <td>
+            ${
+              item.date
+                ? getExamDay(item.date)
+                : '-'
+            }
+          </td>
+
+          <td>
+            ${item.startTime || '-'}
+          </td>
+
+          <td>
+            ${item.endTime || '-'}
+          </td>
+
+          <td>
+            ${item.maxMarks ?? '-'}
+          </td>
+
+          <td>${item.passingMarks ?? '-'}</td>
+
+        </tr>
+
+      `;
+    });
+
+
+    const printWindow =
+      window.open(
+        '',
+        '_blank',
+        'width=1000,height=800'
+      );
+
+
+    if (!printWindow) {
+
+      alert(
+        "Please allow pop-ups in your browser to print the timetable."
+      );
+
+      return;
     }
-    closeModal();
-    loadExams();
-  };
+
+
+    printWindow.document.write(`
+
+      <!DOCTYPE html>
+
+      <html>
+
+      <head>
+
+        <title>
+          ${escapeHtml(examName)} -
+          ${escapeHtml(className)}
+          Timetable
+        </title>
+
+        <style>
+
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            color: #111;
+          }
+
+          .header {
+            text-align: center;
+            margin-bottom: 25px;
+          }
+
+          .header h1 {
+            margin: 0 0 8px;
+            font-size: 24px;
+          }
+
+          .header h2 {
+            margin: 5px 0;
+            font-size: 20px;
+          }
+
+          .header p {
+            margin: 8px 0;
+            font-size: 14px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+
+          th,
+          td {
+            border: 1px solid #222;
+            padding: 10px 8px;
+            text-align: center;
+          }
+
+          th {
+            font-weight: bold;
+          }
+
+          td:nth-child(2) {
+            text-align: left;
+          }
+
+          .footer {
+            margin-top: 45px;
+            display: flex;
+            justify-content: space-between;
+          }
+
+          .signature {
+            width: 200px;
+            text-align: center;
+            border-top: 1px solid #222;
+            padding-top: 7px;
+          }
+
+          @media print {
+
+            body {
+              margin: 15mm;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+
+            table {
+              page-break-inside: auto;
+            }
+
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+
+          }
+
+        </style>
+
+      </head>
+
+
+      <body>
+
+        <div class="header">
+
+          <h1>
+            School Examination Timetable
+          </h1>
+
+          <h2>
+            ${escapeHtml(examName)}
+          </h2>
+
+          <p>
+            <strong>Exam Type:</strong>
+            ${escapeHtml(examType)}
+            &nbsp;&nbsp;&nbsp;&nbsp;
+
+            <strong>Class:</strong>
+            ${escapeHtml(className)}
+          </p>
+
+        </div>
+
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>#</th>
+              <th>Subject</th>
+              <th>Date</th>
+              <th>Day</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Max Marks</th>
+              <th>Passing Marks</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            ${rowsHtml}
+
+          </tbody>
+
+        </table>
+
+
+        <div class="footer">
+
+          <div class="signature">
+            Class Teacher
+          </div>
+
+          <div class="signature">
+            Head Mistress
+          </div>
+
+        </div>
+
+
+        <script>
+
+          window.onload = function() {
+
+            window.print();
+
+          };
+
+        <\/script>
+
+      </body>
+
+      </html>
+
+    `);
+
+
+    printWindow.document.close();
+
+  } catch (error) {
+
+    console.error(
+      "Error printing exam timetable:",
+      error
+    );
+
+    alert(
+      "Error printing timetable: " +
+      error.message
+    );
+  }
 };
+
+
+/* ---------------------------------------------------
+   DELETE COMPLETE CLASS EXAM
+   --------------------------------------------------- */
+
+window.deleteExamGroup = async function(groupId) {
+
+  if (
+    !confirm(
+      "Are you sure you want to delete this complete exam and all of its subject schedules?"
+    )
+  ) {
+    return;
+  }
+
+
+  try {
+
+    /*
+     * Find all subject records belonging to the
+     * complete exam.
+     */
+    const groupedQuery = query(
+      collection(db, "exams"),
+      where("examGroupId", "==", groupId)
+    );
+
+    const groupedSnap =
+      await getDocs(groupedQuery);
+
+
+    if (!groupedSnap.empty) {
+
+      for (const docSnap of groupedSnap.docs) {
+
+        await deleteDoc(
+          doc(db, "exams", docSnap.id)
+        );
+
+      }
+
+    } else {
+
+      /*
+       * Legacy single exam record.
+       */
+      await deleteDoc(
+        doc(db, "exams", groupId)
+      );
+
+    }
+
+
+    await loadExams();
+
+    alert(
+      "Complete exam deleted successfully."
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Error deleting exam:",
+      error
+    );
+
+    alert(
+      "Error deleting exam: " +
+      error.message
+    );
+  }
+};
+
+
+/*
+ * Make loadExams available globally because some
+ * existing HTML/event code may call it directly.
+ */
+window.loadExams = loadExams;
+     
+
 
 /* ===================================================
    MODULE 6 & 7: MARKS ENTRY & AUTOMATIC RESULTS
